@@ -1,13 +1,24 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleAdminClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("admin_token");
+    if (token) {
+      navigate("/admin"); // Já logado → vai direto pro dashboard
+    } else {
+      navigate("/admin/login"); // Não logado → vai pro login
+    }
+  };
 
   return (
     <header className="bg-card shadow-card sticky top-0 z-50 border-b border-border">
@@ -33,17 +44,18 @@ const Header = () => {
             <Link
               to="/departamentos"
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                location.pathname.startsWith("/departamento") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"
+                location.pathname.startsWith("/departamentos") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"
               }`}
             >
               Departamentos
             </Link>
-            <Link
-              to="/admin/login"
+            <a
+              href="/admin"
+              onClick={handleAdminClick}
               className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
             >
               Admin
-            </Link>
+            </a>
           </nav>
 
           <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -55,7 +67,13 @@ const Header = () => {
           <nav className="md:hidden pb-4 flex flex-col gap-1">
             <Link to="/" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Home</Link>
             <Link to="/departamentos" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Departamentos</Link>
-            <Link to="/admin/login" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Admin</Link>
+            <a
+              href="/admin"
+              onClick={(e) => { e.preventDefault(); handleAdminClick(e); setMobileOpen(false); }}
+              className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent"
+            >
+              Admin
+            </a>
           </nav>
         )}
       </div>

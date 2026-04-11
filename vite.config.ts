@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    // Mesma origem que o front: /api e /docs vão para o Express (evita CSS/JS “sumirem” em rotas profundas ao usar só um host)
+    proxy: {
+      "/api": { target: "http://127.0.0.1:3001", changeOrigin: true },
+      "/docs": { target: "http://127.0.0.1:3001", changeOrigin: true },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

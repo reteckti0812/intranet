@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Megaphone, FileEdit, Building2, FolderSync,
@@ -15,11 +16,35 @@ const menuItems = [
   { icon: Users, label: "Usuários Admin", path: "/admin/usuarios" },
 ];
 
+function readAdminLabel(): string {
+  try {
+    const raw = localStorage.getItem("admin_user");
+    if (!raw) return "Admin";
+    const u = JSON.parse(raw) as { name?: string; email?: string; role?: string };
+    const rolePt = u.role === "super" ? "Super Admin" : "Admin";
+    return u.name ? `${u.name} (${rolePt})` : rolePt;
+  } catch {
+    return "Admin";
+  }
+}
+
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [adminLabel, setAdminLabel] = useState(readAdminLabel);
   const location = useLocation();
+
+  useEffect(() => {
+    setAdminLabel(readAdminLabel());
+  }, [location.pathname]);
   const sidebarWidth = sidebarOpen ? "w-64" : "w-16";
   const marginLeft = sidebarOpen ? "ml-64" : "ml-16";
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    navigate("/admin/login");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,11 +75,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           })}
         </nav>
         <div className="p-4 border-t border-sidebar-border">
-          {sidebarOpen && <p className="text-xs opacity-60 mb-2">Logado como: Admin</p>}
-          <Link to="/" className="flex items-center gap-2 text-sm hover:text-sidebar-primary transition-colors">
+          {sidebarOpen && (
+            <p className="text-xs opacity-60 mb-2 leading-snug">Logado como: {adminLabel}</p>
+          )}
+          <button onClick={handleLogout} className="flex items-center gap-2 text-sm hover:text-sidebar-primary transition-colors w-full">
             <LogOut size={16} />
             {sidebarOpen && <span>Sair</span>}
-          </Link>
+          </button>
         </div>
       </aside>
 
