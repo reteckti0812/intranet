@@ -118,6 +118,8 @@ seedHomeContent.run('values', '');
 seedHomeContent.run('commitment', '');
 seedHomeContent.run('quality_policy', '');
 seedHomeContent.run('reteck_way', '');
+seedHomeContent.run('reteck_way_left', '');
+seedHomeContent.run('reteck_way_right', '');
 seedHomeContent.run('contacts', '');
 seedHomeContent.run('external_calls', '');
 seedHomeContent.run('official_documents', '');

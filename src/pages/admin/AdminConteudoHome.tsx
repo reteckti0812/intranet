@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { Save, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,8 @@ const AdminConteudoHome = () => {
     commitment: "",
     vision: "",
     quality_policy: "",
-    reteck_way: "",
+    reteck_way_left: "",
+    reteck_way_right: "",
     contacts: "",
     external_calls: "",
   });
@@ -44,7 +45,8 @@ const AdminConteudoHome = () => {
           commitment: data.commitment || "",
           vision: data.vision || "",
           quality_policy: data.quality_policy || "",
-          reteck_way: data.reteck_way || "",
+          reteck_way_left: data.reteck_way_left || data.reteck_way || "",
+          reteck_way_right: data.reteck_way_right || "",
           contacts: data.contacts || "",
           external_calls: data.external_calls || "",
         });
@@ -89,14 +91,13 @@ const AdminConteudoHome = () => {
     }
   };
 
-  const fields: { label: string; key: string; large?: boolean }[] = [
+  const fields: { label: string; key: keyof typeof content; large?: boolean }[] = [
     { label: "Documentos Oficiais", key: "official_documents" },
     { label: "Valores", key: "values" },
     { label: "Missão", key: "mission" },
     { label: "Compromisso", key: "commitment" },
     { label: "Visão", key: "vision" },
     { label: "Política de Qualidade", key: "quality_policy", large: true },
-    { label: "Jeito Re-Teck de Ser", key: "reteck_way", large: true },
     { label: "Contatos / Ramais", key: "contacts" },
     { label: "Instruções para Chamadas Externas", key: "external_calls" },
   ];
@@ -125,17 +126,59 @@ const AdminConteudoHome = () => {
 
         {/* Textos Institucionais */}
         <Section title="Textos Institucionais">
+          <p className="text-sm text-muted-foreground -mt-1">
+            Texto simples aparece na home com as mesmas quebras de linha e espaços. Para negrito,
+            listas ou tabelas de ramais, use HTML seguro (por exemplo{" "}
+            <code className="text-xs bg-muted px-1 rounded">&lt;strong&gt;</code>,{" "}
+            <code className="text-xs bg-muted px-1 rounded">&lt;br&gt;</code>,{" "}
+            <code className="text-xs bg-muted px-1 rounded">&lt;ul&gt;&lt;li&gt;</code>,{" "}
+            <code className="text-xs bg-muted px-1 rounded">&lt;table&gt;</code>
+            …).
+          </p>
           <div className="grid gap-4">
             {fields.map(f => (
-              <div key={f.key}>
-                <Label>{f.label}</Label>
-                <Textarea
-                  value={(content as any)[f.key]}
-                  onChange={e => handleChange(f.key, e.target.value)}
-                  rows={f.large ? 5 : 2}
-                  className="mt-1"
-                />
-              </div>
+              <Fragment key={f.key}>
+                <div>
+                  <Label>{f.label}</Label>
+                  <Textarea
+                    value={content[f.key]}
+                    onChange={e => handleChange(f.key, e.target.value)}
+                    rows={f.large ? 5 : 2}
+                    className="mt-1 text-sm"
+                  />
+                </div>
+                {f.key === "quality_policy" && (
+                  <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-3">
+                    <div>
+                      <Label className="text-base">Jeito Re-Teck de Ser — duas colunas na home</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        A coluna esquerda fica à esquerda e a direita à direita (em ecrãs largos).
+                        Se só existir conteúdo antigo num único campo, carregue-o na coluna esquerda.
+                      </p>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Coluna esquerda</Label>
+                        <Textarea
+                          value={content.reteck_way_left}
+                          onChange={e => handleChange("reteck_way_left", e.target.value)}
+                          rows={8}
+                          className="mt-1 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <Label>Coluna direita</Label>
+                        <Textarea
+                          value={content.reteck_way_right}
+                          onChange={e => handleChange("reteck_way_right", e.target.value)}
+                          rows={8}
+                          className="mt-1 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Fragment>
             ))}
           </div>
         </Section>

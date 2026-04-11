@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useHomeContent } from "@/hooks/useHomeContent";
+import { HomeRichText } from "@/components/HomeRichText";
 
 interface Department {
   id: number;
@@ -51,6 +52,11 @@ const Home = () => {
     { icon: Eye,      title: "Visão",               desc: content?.vision },
   ];
 
+  const reteckLegacy = content?.reteck_way?.trim();
+  const reteckLeft = content?.reteck_way_left?.trim() || reteckLegacy || "";
+  const reteckRight = content?.reteck_way_right?.trim() || "";
+  const reteckHasContent = Boolean(reteckLeft || reteckRight);
+
   if (contentLoading || deptLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-primary gap-3">
@@ -81,8 +87,10 @@ const Home = () => {
   </span>
 )}
                 <h3 className="font-semibold text-sm leading-snug mb-1">{a.title}</h3>
-                {/* ← descrição do aviso agora aparece */}
-                <p className="text-xs opacity-90 leading-relaxed line-clamp-3">{a.content}</p>
+                <HomeRichText
+                  content={a.content}
+                  className="text-xs opacity-90 leading-relaxed [&_a]:text-primary-foreground"
+                />
                 {a.expires_at && (
                   <p className="text-xs mt-2 opacity-70">
                     Válido até: {new Date(a.expires_at).toLocaleDateString("pt-BR")}
@@ -107,7 +115,7 @@ const Home = () => {
                 <d.icon size={28} className="text-primary mb-3" />
                 <h3 className="font-semibold text-foreground text-sm">{d.title}</h3>
                 {d.desc ? (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{d.desc}</p>
+                  <HomeRichText content={d.desc} className="text-xs text-muted-foreground mt-1" />
                 ) : (
                   <p className="text-xs text-muted-foreground/40 mt-1 italic">Não configurado</p>
                 )}
@@ -123,7 +131,7 @@ const Home = () => {
                 <d.icon size={28} className="text-primary mb-3" />
                 <h3 className="font-semibold text-foreground text-sm">{d.title}</h3>
                 {d.desc ? (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{d.desc}</p>
+                  <HomeRichText content={d.desc} className="text-xs text-muted-foreground mt-1" />
                 ) : (
                   <p className="text-xs text-muted-foreground/40 mt-1 italic">Não configurado</p>
                 )}
@@ -139,20 +147,42 @@ const Home = () => {
           <Shield size={22} className="text-primary" />
           Política da Qualidade
         </h2>
-        <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-          {content?.quality_policy || "A Re-Teck mantém um sistema de gestão integrada..."}
-        </div>
+        {content?.quality_policy?.trim() ? (
+          <HomeRichText
+            content={content.quality_policy}
+            className="text-sm text-muted-foreground leading-relaxed"
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            A Re-Teck mantém um sistema de gestão integrada com foco em qualidade, segurança e
+            melhoria contínua.
+          </p>
+        )}
       </section>
 
-      {/* Jeito Re-Teck de Ser */}
+      {/* Jeito Re-Teck de Ser — duas colunas (editável no admin) */}
       <section className="bg-accent rounded-2xl p-8 border border-primary/20">
         <h2 className="text-xl font-bold text-accent-foreground mb-3 flex items-center gap-2">
           <Leaf size={22} className="text-primary" />
           Jeito Re-Teck de Ser
         </h2>
-        <p className="text-sm text-accent-foreground/80 leading-relaxed whitespace-pre-line">
-          {content?.reteck_way || "A família Re-Teck trabalha com os princípios de Visão e Missão..."}
-        </p>
+        {!reteckHasContent ? (
+          <p className="text-sm text-accent-foreground/80 leading-relaxed">
+            A família Re-Teck trabalha com os princípios de Visão e Missão, unindo pessoas em torno
+            de objetivos comuns.
+          </p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-10 text-sm text-accent-foreground/90">
+            <HomeRichText
+              content={reteckLeft}
+              className="leading-relaxed min-w-0 [&_a]:text-primary"
+            />
+            <HomeRichText
+              content={reteckRight}
+              className="leading-relaxed min-w-0 [&_a]:text-primary"
+            />
+          </div>
+        )}
       </section>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -184,25 +214,33 @@ const Home = () => {
         </section>
 
         {/* Sidebar */}
-        <aside className="space-y-6">
-          <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+        <aside className="space-y-6 min-w-0">
+          <div className="bg-card rounded-xl p-5 shadow-card border border-border min-w-0">
             <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <Phone size={18} className="text-primary" />
               Ramais e Contatos
             </h3>
-            <p className="text-xs text-muted-foreground whitespace-pre-line">
-              {content?.contacts || "Consulte a lista de ramais internos."}
-            </p>
+            {content?.contacts?.trim() ? (
+              <div className="overflow-x-auto -mx-1 px-1">
+                <HomeRichText content={content.contacts} className="text-xs text-muted-foreground" />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Consulte a lista de ramais internos.</p>
+            )}
           </div>
 
-          <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+          <div className="bg-card rounded-xl p-5 shadow-card border border-border min-w-0">
             <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <BookOpen size={18} className="text-primary" />
               Ligações Externas
             </h3>
-            <p className="text-xs text-muted-foreground whitespace-pre-line">
-              {content?.external_calls || "Instruções para ligações externas."}
-            </p>
+            {content?.external_calls?.trim() ? (
+              <div className="overflow-x-auto -mx-1 px-1">
+                <HomeRichText content={content.external_calls} className="text-xs text-muted-foreground" />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Instruções para ligações externas.</p>
+            )}
           </div>
         </aside>
       </div>
