@@ -8,7 +8,13 @@ import Home from "./pages/Home";
 import DepartmentView from "./pages/DepartmentView";
 import DepartmentsList from "./pages/DepartmentsList";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminAvisos from "./pages/admin/AdminAvisos";
+import AdminConteudoHome from "./pages/admin/AdminConteudoHome";
+import AdminDepartamentos from "./pages/admin/AdminDepartamentos";
+import AdminSincronizar from "./pages/admin/AdminSincronizar";
+import AdminUsuarios from "./pages/admin/AdminUsuarios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,7 +23,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = location.pathname.startsWith("/admin") && location.pathname !== "/admin/login";
 
-  if (isAdmin) return <>{children}</>;
+  if (isAdmin) return <AdminLayout>{children}</AdminLayout>;
 
   return (
     <>
@@ -35,6 +41,11 @@ const AppRoutes = () => (
       <Route path="/departamento/:slug" element={<DepartmentView />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/avisos" element={<AdminAvisos />} />
+      <Route path="/admin/conteudo-home" element={<AdminConteudoHome />} />
+      <Route path="/admin/departamentos" element={<AdminDepartamentos />} />
+      <Route path="/admin/sincronizar" element={<AdminSincronizar />} />
+      <Route path="/admin/usuarios" element={<AdminUsuarios />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>
