@@ -221,7 +221,7 @@ const AdminSincronizar = () => {
             size="lg"
             className="w-full"
             disabled={syncing}
-            onClick={() => startSync("documentos")}
+            onClick={() => startSync("intranet")}
           >
             <RefreshCw size={18} className="mr-2" />
             Sincronizar a Intranet
@@ -244,7 +244,7 @@ const AdminSincronizar = () => {
             variant="secondary"
             className="w-full"
             disabled={syncing}
-            onClick={() => startSync("intranet")}
+            onClick={() => startSync("documentos")}
           >
             <RefreshCw size={18} className="mr-2" />
             Sincronizar os documentos

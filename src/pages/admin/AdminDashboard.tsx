@@ -176,7 +176,7 @@ const AdminDashboard = () => {
 
         <button
           type="button"
-          onClick={() => runSync("documentos")}
+          onClick={() => runSync("intranet")}
           disabled={syncingKind !== null}
           className="flex items-center gap-3 bg-info text-info-foreground rounded-xl p-5 hover:opacity-90 transition-opacity disabled:opacity-60 text-left"
         >
@@ -195,7 +195,7 @@ const AdminDashboard = () => {
 
         <button
           type="button"
-          onClick={() => runSync("intranet")}
+          onClick={() => runSync("documentos")}
           disabled={syncingKind !== null}
           className="flex items-center gap-3 bg-secondary text-secondary-foreground rounded-xl p-5 hover:opacity-90 transition-opacity disabled:opacity-60 border border-border text-left"
         >
