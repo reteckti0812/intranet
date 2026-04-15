@@ -40,7 +40,7 @@ const DepartmentsList = () => {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await api.get("/departments");
+        const response = await api.get("/departments?public=1");
         setDepartments(response.data);
       } catch (err) {
         setError("Não foi possível carregar os departamentos. Verifique se o servidor está rodando.");
@@ -67,7 +67,7 @@ const DepartmentsList = () => {
       try {
         setSearching(true);
         const response = await api.get("/departments/search-documents", {
-          params: { q: term },
+          params: { q: term, public: 1 },
         });
         if (!active) return;
         setSearchResults(response.data || []);

@@ -4,17 +4,26 @@ const db = require('../database.cjs');
 
 const slugify = (s) =>
   s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+const isNumericCode = (code) => /^\d+$/.test(String(code || '').trim());
+const buildDepartmentFolderPath = (code, name) => `C:\\Intranet\\Documentos\\${code}${name}`;
+const codeWidth = (code) => Math.max(2, String(code || '').length);
 
 // GET todos os departamentos
 router.get('/', (req, res) => {
   try {
+    const onlyPublic = req.query.public === '1';
+    const wherePublic = onlyPublic
+      ? `WHERE d.code <> '' AND d.code NOT GLOB '*[^0-9]*'`
+      : '';
     const rows = db.prepare(`
       SELECT d.*,
       (SELECT COUNT(*) FROM groups g WHERE g.department_id = d.id) as group_count,
       (SELECT COUNT(*) FROM documents doc
         INNER JOIN groups g ON g.id = doc.group_id
         WHERE g.department_id = d.id) as doc_count
-      FROM departments d ORDER BY d.code ASC
+      FROM departments d
+      ${wherePublic}
+      ORDER BY d.code ASC
     `).all();
     res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -86,11 +95,15 @@ router.put('/documents/:id/observation', (req, res) => {
 router.get('/search-documents', (req, res) => {
   try {
     const rawQuery = String(req.query.q || '').trim();
+    const onlyPublic = req.query.public === '1';
     if (!rawQuery) {
       return res.json([]);
     }
 
     const like = `%${rawQuery.toLowerCase()}%`;
+    const wherePublic = onlyPublic
+      ? `AND d.code <> '' AND d.code NOT GLOB '*[^0-9]*'`
+      : '';
     const rows = db.prepare(`
       SELECT
         doc.id,
@@ -110,6 +123,7 @@ router.get('/search-documents', (req, res) => {
       WHERE
         LOWER(doc.title) LIKE ?
         OR LOWER(COALESCE(doc.code, '')) LIKE ?
+        ${wherePublic}
       ORDER BY doc.title COLLATE NOCASE ASC, doc.code COLLATE NOCASE ASC
       LIMIT 100
     `).all(like, like);
@@ -145,7 +159,61 @@ router.put('/:id', (req, res) => {
 // DELETE departamento
 router.delete('/:id', (req, res) => {
   try {
-    db.prepare('DELETE FROM departments WHERE id=?').run(req.params.id);
+    const departmentId = Number(req.params.id);
+    const getDept = db.prepare('SELECT id, code, name, folder_path FROM departments WHERE id = ?');
+    const target = getDept.get(departmentId);
+    if (!target) {
+      return res.status(404).json({ error: 'Departamento não encontrado' });
+    }
+
+    const tx = db.transaction(() => {
+      db.prepare('DELETE FROM departments WHERE id = ?').run(departmentId);
+
+      if (!isNumericCode(target.code)) return;
+
+      const removedCode = Number(target.code);
+      const width = codeWidth(target.code);
+
+      const affected = db.prepare(`
+        SELECT id, code, name, slug, folder_path
+        FROM departments
+        WHERE code <> '' AND code NOT GLOB '*[^0-9]*' AND CAST(code AS INTEGER) > ?
+        ORDER BY CAST(code AS INTEGER) ASC
+      `).all(removedCode);
+
+      const updateDept = db.prepare(`
+        UPDATE departments
+        SET code = ?, slug = ?, folder_path = ?
+        WHERE id = ?
+      `);
+
+      const moveGroupPaths = db.prepare(`
+        UPDATE groups
+        SET folder_path = REPLACE(folder_path, ?, ?)
+        WHERE department_id = ? AND folder_path LIKE ?
+      `);
+
+      const moveDocPaths = db.prepare(`
+        UPDATE documents
+        SET file_path = REPLACE(file_path, ?, ?)
+        WHERE group_id IN (SELECT id FROM groups WHERE department_id = ?)
+          AND file_path LIKE ?
+      `);
+
+      for (const dept of affected) {
+        const oldPath = dept.folder_path || buildDepartmentFolderPath(dept.code, dept.name);
+        const nextCodeNum = Number(dept.code) - 1;
+        const nextCode = String(nextCodeNum).padStart(width, '0');
+        const nextSlug = slugify(`${nextCode}-${dept.name}`);
+        const nextPath = buildDepartmentFolderPath(nextCode, dept.name);
+
+        updateDept.run(nextCode, nextSlug, nextPath, dept.id);
+        moveGroupPaths.run(oldPath, nextPath, dept.id, `${oldPath}%`);
+        moveDocPaths.run(oldPath, nextPath, dept.id, `${oldPath}%`);
+      }
+    });
+
+    tx();
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -191,6 +259,9 @@ router.get('/by-slug/:slug', (req, res) => {
     if (!department) {
       return res.status(404).json({ error: 'Departamento não encontrado' });
     }
+    if (!isNumericCode(department.code)) {
+      return res.status(404).json({ error: 'Departamento não encontrado' });
+    }
 
     // Busca os grupos desse departamento
     const groups = db.prepare(`
@@ -198,7 +269,11 @@ router.get('/by-slug/:slug', (req, res) => {
       FROM groups
       WHERE department_id = ?
       ORDER BY
-        CASE WHEN LOWER(name) = 'procedimentos' THEN 0 ELSE 1 END,
+        CASE
+          WHEN LOWER(name) = 'procedimentos' THEN 0
+          WHEN LOWER(name) = 'outros' THEN 2
+          ELSE 1
+        END,
         name COLLATE NOCASE ASC
     `).all(department.id);
 
@@ -208,7 +283,10 @@ router.get('/by-slug/:slug', (req, res) => {
         SELECT *
         FROM documents
         WHERE group_id = ?
-        ORDER BY title COLLATE NOCASE ASC, code COLLATE NOCASE ASC
+        ORDER BY
+          CASE WHEN TRIM(COALESCE(code, '')) = '' THEN 1 ELSE 0 END,
+          code COLLATE NOCASE ASC,
+          title COLLATE NOCASE ASC
       `).all(group.id);
       return { ...group, documents: docs };
     });

@@ -319,11 +319,35 @@ function syncDatabaseToDocumentos() {
 
   const keepDirs = new Set();
   const expectedFileKeys = new Set();
+  const rootEntries = fs.readdirSync(ROOT_PATH, { withFileTypes: true });
+
+  function tryRenameLegacyDepartmentFolder(expectedPath) {
+    if (fs.existsSync(expectedPath)) return false;
+    const expectedFolder = path.basename(expectedPath);
+    const m = expectedFolder.match(/^(\d+)\s*[-_]?\s*(.+)$/);
+    if (!m) return false;
+    const expectedName = m[2].trim().toLowerCase();
+
+    const candidates = rootEntries
+      .filter((ent) => ent.isDirectory())
+      .map((ent) => path.join(ROOT_PATH, ent.name))
+      .filter((abs) => {
+        const nm = path.basename(abs).match(/^(\d+)\s*[-_]?\s*(.+)$/);
+        return nm && nm[2].trim().toLowerCase() === expectedName;
+      })
+      .filter((abs) => path.resolve(abs).toLowerCase() !== path.resolve(expectedPath).toLowerCase());
+
+    if (candidates.length !== 1) return false;
+
+    fs.renameSync(candidates[0], expectedPath);
+    return true;
+  }
 
   for (const d of departments) {
     if (!d.folder_path || !isPathUnderDocumentos(d.folder_path)) {
       throw new Error(`Departamento id=${d.id}: folder_path inválido ou fora de Documentos: ${d.folder_path}`);
     }
+    tryRenameLegacyDepartmentFolder(d.folder_path);
     fs.mkdirSync(d.folder_path, { recursive: true });
     stats.foldersEnsured += 1;
     addPathAndParents(keepDirs, d.folder_path);

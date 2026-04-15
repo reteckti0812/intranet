@@ -53,7 +53,7 @@ const Home = () => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
   useEffect(() => {
-    api.get("/departments")
+    api.get("/departments?public=1")
       .then(res => setDepartments(res.data))
       .catch(err => console.error(err))
       .finally(() => setDeptLoading(false));
