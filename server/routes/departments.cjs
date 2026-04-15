@@ -34,6 +34,42 @@ router.get('/groups-all', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET busca global de documentos (todos os departamentos)
+router.get('/search-documents', (req, res) => {
+  try {
+    const rawQuery = String(req.query.q || '').trim();
+    if (!rawQuery) {
+      return res.json([]);
+    }
+
+    const like = `%${rawQuery.toLowerCase()}%`;
+    const rows = db.prepare(`
+      SELECT
+        doc.id,
+        doc.code,
+        doc.title,
+        doc.file_path,
+        doc.file_type,
+        g.id as group_id,
+        g.name as group_name,
+        d.id as department_id,
+        d.code as department_code,
+        d.name as department_name,
+        d.slug as department_slug
+      FROM documents doc
+      INNER JOIN groups g ON g.id = doc.group_id
+      INNER JOIN departments d ON d.id = g.department_id
+      WHERE
+        LOWER(doc.title) LIKE ?
+        OR LOWER(COALESCE(doc.code, '')) LIKE ?
+      ORDER BY doc.title COLLATE NOCASE ASC, doc.code COLLATE NOCASE ASC
+      LIMIT 100
+    `).all(like, like);
+
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST criar departamento
 router.post('/', (req, res) => {
   try {
@@ -109,11 +145,23 @@ router.get('/by-slug/:slug', (req, res) => {
     }
 
     // Busca os grupos desse departamento
-    const groups = db.prepare('SELECT * FROM groups WHERE department_id = ?').all(department.id);
+    const groups = db.prepare(`
+      SELECT *
+      FROM groups
+      WHERE department_id = ?
+      ORDER BY
+        CASE WHEN LOWER(name) = 'procedimentos' THEN 0 ELSE 1 END,
+        name COLLATE NOCASE ASC
+    `).all(department.id);
 
     // Para cada grupo, busca os documentos
     const groupsWithDocs = groups.map(group => {
-      const docs = db.prepare('SELECT * FROM documents WHERE group_id = ?').all(group.id);
+      const docs = db.prepare(`
+        SELECT *
+        FROM documents
+        WHERE group_id = ?
+        ORDER BY title COLLATE NOCASE ASC, code COLLATE NOCASE ASC
+      `).all(group.id);
       return { ...group, documents: docs };
     });
 
