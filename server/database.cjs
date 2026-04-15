@@ -132,6 +132,8 @@ seedHomeContent.run('reteck_way_right', '');
 seedHomeContent.run('contacts', '');
 seedHomeContent.run('external_calls', '');
 seedHomeContent.run('official_documents', '');
+seedHomeContent.run('master_list_files', '');
+seedHomeContent.run('general_documents_files', '');
 
 console.log('✅ Banco de Dados configurado e tabelas criadas com sucesso.');
 

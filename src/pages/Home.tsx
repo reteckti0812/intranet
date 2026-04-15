@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
   FileText, Heart, Target, Handshake, Eye,
   Building2, BookOpen, Shield, Phone,
-  ChevronRight, Megaphone, Leaf, Loader2
+  ChevronRight, Megaphone, Leaf, Loader2, Download, ExternalLink, FileSpreadsheet, FileCode
 } from "lucide-react";
 import api from "@/lib/api";
 import { useHomeContent } from "@/hooks/useHomeContent";
@@ -23,6 +23,28 @@ interface Announcement {
   expires_at: string | null;
   priority: number;
 }
+
+interface HomeFileItem {
+  id: number;
+  name: string;
+  url: string;
+}
+
+const getFileExtension = (name: string) => {
+  const idx = name.lastIndexOf(".");
+  return idx >= 0 ? name.slice(idx + 1).toLowerCase() : "";
+};
+
+const fileIconByName = (name: string) => {
+  const ext = getFileExtension(name);
+  if (ext === "xls" || ext === "xlsx" || ext === "csv") {
+    return <FileSpreadsheet size={16} className="text-emerald-600 shrink-0" />;
+  }
+  if (ext === "json" || ext === "xml" || ext === "yaml" || ext === "yml") {
+    return <FileCode size={16} className="text-amber-600 shrink-0" />;
+  }
+  return <FileText size={16} className="text-primary shrink-0" />;
+};
 
 const Home = () => {
   const { content, loading: contentLoading } = useHomeContent();
@@ -56,6 +78,19 @@ const Home = () => {
   const reteckLeft = content?.reteck_way_left?.trim() || reteckLegacy || "";
   const reteckRight = content?.reteck_way_right?.trim() || "";
   const reteckHasContent = Boolean(reteckLeft || reteckRight);
+  const parseFiles = (raw?: string): HomeFileItem[] => {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+  const masterFiles = parseFiles(content?.master_list_files)
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+  const generalFiles = parseFiles(content?.general_documents_files)
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
 
   if (contentLoading || deptLoading) {
     return (
@@ -210,6 +245,94 @@ const Home = () => {
                 <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
               </Link>
             ))}
+          </div>
+
+          <div className="space-y-4 mt-6">
+            <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <FileText size={18} className="text-primary" />
+                Lista Mestra
+              </h3>
+              {masterFiles.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum arquivo disponível.</p>
+              ) : (
+                <div className="space-y-2">
+                  {masterFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2"
+                    >
+                      <p className="text-sm text-foreground truncate flex items-center gap-2">
+                        {fileIconByName(file.name)}
+                        <span className="truncate">{file.name}</span>
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border hover:bg-accent transition-colors"
+                        >
+                          <ExternalLink size={13} />
+                          Visualizar
+                        </a>
+                        <a
+                          href={file.url}
+                          download
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                        >
+                          <Download size={13} />
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                <FileText size={18} className="text-primary" />
+                Documentos Gerais
+              </h3>
+              {generalFiles.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhum arquivo disponível.</p>
+              ) : (
+                <div className="space-y-2">
+                  {generalFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2"
+                    >
+                      <p className="text-sm text-foreground truncate flex items-center gap-2">
+                        {fileIconByName(file.name)}
+                        <span className="truncate">{file.name}</span>
+                      </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border hover:bg-accent transition-colors"
+                        >
+                          <ExternalLink size={13} />
+                          Visualizar
+                        </a>
+                        <a
+                          href={file.url}
+                          download
+                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                        >
+                          <Download size={13} />
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

@@ -228,7 +228,7 @@ const AdminDepartamentos = () => {
               <TableHead>Nome</TableHead>
               <TableHead className="w-40">Slug</TableHead>
               <TableHead className="w-20 text-center">Grupos</TableHead>
-              <TableHead className="w-44 text-center">Ações</TableHead>
+              <TableHead className="w-32 text-center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -264,9 +264,6 @@ const AdminDepartamentos = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                    <Button variant="ghost" size="icon" className="text-warning" onClick={() => openFolder(d.folder_path)}>
-                      <FolderOpen size={14} />
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -294,7 +291,7 @@ const AdminDepartamentos = () => {
           </Select>
           <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" onClick={openNewGroup}>
+              <Button onClick={openNewGroup}>
                 <Plus size={16} className="mr-2" />Novo Grupo
               </Button>
             </DialogTrigger>
@@ -342,7 +339,7 @@ const AdminDepartamentos = () => {
               <TableHead>Nome</TableHead>
               <TableHead>Departamento</TableHead>
               <TableHead className="w-24 text-center">Docs</TableHead>
-              <TableHead className="w-40 text-center">Ações</TableHead>
+              <TableHead className="w-32 text-center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -377,9 +374,6 @@ const AdminDepartamentos = () => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
-                    <Button variant="ghost" size="icon" className="text-warning" onClick={() => openFolder(g.folder_path)}>
-                      <FolderOpen size={14} />
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))

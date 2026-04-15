@@ -1,7 +1,6 @@
-import { Fragment, useState, useEffect } from "react";
-import { Save, Plus, Trash2, Loader2 } from "lucide-react";
+import { Fragment, useState, useEffect, useRef } from "react";
+import { Save, Trash2, Loader2, Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -14,9 +13,19 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </section>
 );
 
+type HomeFileItem = {
+  id: number;
+  name: string;
+  url: string;
+  stored_name?: string;
+  uploaded_at?: string;
+};
+
 const AdminConteudoHome = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingMaster, setUploadingMaster] = useState(false);
+  const [uploadingGeneral, setUploadingGeneral] = useState(false);
 
   const [content, setContent] = useState({
     official_documents: "",
@@ -30,8 +39,10 @@ const AdminConteudoHome = () => {
     contacts: "",
     external_calls: "",
   });
-
-  const [videos, setVideos] = useState<{ id: number; title: string; url: string }[]>([]);
+  const [masterFiles, setMasterFiles] = useState<HomeFileItem[]>([]);
+  const [generalFiles, setGeneralFiles] = useState<HomeFileItem[]>([]);
+  const masterInputRef = useRef<HTMLInputElement | null>(null);
+  const generalInputRef = useRef<HTMLInputElement | null>(null);
 
   // Carrega conteúdo do banco ao abrir a página
   useEffect(() => {
@@ -50,14 +61,15 @@ const AdminConteudoHome = () => {
           contacts: data.contacts || "",
           external_calls: data.external_calls || "",
         });
-
-        // Carrega vídeos se existirem no banco
-        if (data.videos) {
-          try {
-            setVideos(JSON.parse(data.videos));
-          } catch {
-            setVideos([]);
-          }
+        try {
+          setMasterFiles(data.master_list_files ? JSON.parse(data.master_list_files) : []);
+        } catch {
+          setMasterFiles([]);
+        }
+        try {
+          setGeneralFiles(data.general_documents_files ? JSON.parse(data.general_documents_files) : []);
+        } catch {
+          setGeneralFiles([]);
         }
       })
       .catch(() => toast.error("Erro ao carregar conteúdo."))
@@ -67,27 +79,49 @@ const AdminConteudoHome = () => {
   const handleChange = (key: string, value: string) =>
     setContent(prev => ({ ...prev, [key]: value }));
 
-  const addVideo = () =>
-    setVideos(prev => [...prev, { id: Date.now(), title: "", url: "" }]);
-
-  const removeVideo = (id: number) =>
-    setVideos(prev => prev.filter(v => v.id !== id));
-
-  const updateVideo = (id: number, field: string, value: string) =>
-    setVideos(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
-
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.post("/home-content/batch", {
-        ...content,
-        videos: JSON.stringify(videos), // salva vídeos como JSON no banco
-      });
+      await api.post("/home-content/batch", content);
       toast.success("Conteúdo salvo com sucesso!");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Erro ao salvar conteúdo.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadHomeFile = async (type: "master" | "general", file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+
+    if (type === "master") setUploadingMaster(true);
+    if (type === "general") setUploadingGeneral(true);
+
+    try {
+      const response = await api.post(`/home-content/files/${type}`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const item = response.data?.item as HomeFileItem;
+      if (type === "master") setMasterFiles((prev) => [...prev, item]);
+      if (type === "general") setGeneralFiles((prev) => [...prev, item]);
+      toast.success("Arquivo enviado com sucesso!");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Erro ao enviar arquivo.");
+    } finally {
+      if (type === "master") setUploadingMaster(false);
+      if (type === "general") setUploadingGeneral(false);
+    }
+  };
+
+  const removeHomeFile = async (type: "master" | "general", id: number) => {
+    try {
+      await api.delete(`/home-content/files/${type}/${id}`);
+      if (type === "master") setMasterFiles((prev) => prev.filter((f) => f.id !== id));
+      if (type === "general") setGeneralFiles((prev) => prev.filter((f) => f.id !== id));
+      toast.success("Arquivo removido.");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Erro ao remover arquivo.");
     }
   };
 
@@ -183,47 +217,92 @@ const AdminConteudoHome = () => {
           </div>
         </Section>
 
-        {/* Vídeos Institucionais */}
-        <Section title="Vídeos Institucionais">
-          <div className="space-y-3">
-            {videos.length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhum vídeo cadastrado.</p>
-            )}
-            {videos.map(v => (
-              <div key={v.id} className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <Label>Título</Label>
-                  <Input
-                    value={v.title}
-                    onChange={e => updateVideo(v.id, "title", e.target.value)}
-                    placeholder="Ex: Apresentação Institucional"
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label>URL do YouTube</Label>
-                  <Input
-                    value={v.url}
-                    onChange={e => updateVideo(v.id, "url", e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="mt-1"
-                  />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive mb-0.5"
-                  onClick={() => removeVideo(v.id)}
-                >
-                  <Trash2 size={16} />
-                </Button>
-              </div>
-            ))}
+        <Section title="Arquivos - Lista Mestra">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <input
+              ref={masterInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadHomeFile("master", file);
+                e.currentTarget.value = "";
+              }}
+            />
+            <Button
+              onClick={() => masterInputRef.current?.click()}
+              disabled={uploadingMaster}
+            >
+              {uploadingMaster ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Upload size={16} className="mr-2" />}
+              Enviar arquivo (Lista Mestra)
+            </Button>
           </div>
-          <Button variant="outline" onClick={addVideo} className="mt-2">
-            <Plus size={16} className="mr-2" />
-            Adicionar Vídeo
-          </Button>
+          <div className="space-y-2">
+            {masterFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum arquivo cadastrado.</p>
+            ) : (
+              masterFiles.map((file) => (
+                <div key={file.id} className="flex items-center justify-between gap-3 border border-border rounded-lg p-3">
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-2 min-w-0"
+                  >
+                    <FileText size={14} />
+                    <span className="truncate">{file.name}</span>
+                  </a>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeHomeFile("master", file.id)}>
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </Section>
+
+        <Section title="Arquivos - Documentos Gerais">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <input
+              ref={generalInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadHomeFile("general", file);
+                e.currentTarget.value = "";
+              }}
+            />
+            <Button
+              onClick={() => generalInputRef.current?.click()}
+              disabled={uploadingGeneral}
+            >
+              {uploadingGeneral ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Upload size={16} className="mr-2" />}
+              Enviar arquivo (Documentos Gerais)
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {generalFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum arquivo cadastrado.</p>
+            ) : (
+              generalFiles.map((file) => (
+                <div key={file.id} className="flex items-center justify-between gap-3 border border-border rounded-lg p-3">
+                  <a
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline flex items-center gap-2 min-w-0"
+                  >
+                    <FileText size={14} />
+                    <span className="truncate">{file.name}</span>
+                  </a>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removeHomeFile("general", file.id)}>
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
         </Section>
 
       </div>
