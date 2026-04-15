@@ -34,6 +34,54 @@ router.get('/groups-all', (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET todos os documentos com contexto (admin)
+router.get('/documents-all', (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT
+        doc.id,
+        doc.code,
+        doc.title,
+        doc.file_path,
+        doc.file_type,
+        doc.created_at,
+        doc.observation,
+        g.id as group_id,
+        g.name as group_name,
+        d.id as department_id,
+        d.code as department_code,
+        d.name as department_name,
+        d.slug as department_slug
+      FROM documents doc
+      INNER JOIN groups g ON g.id = doc.group_id
+      INNER JOIN departments d ON d.id = g.department_id
+      ORDER BY
+        d.code ASC,
+        CASE WHEN LOWER(g.name) = 'procedimentos' THEN 0 ELSE 1 END,
+        g.name COLLATE NOCASE ASC,
+        doc.title COLLATE NOCASE ASC,
+        doc.code COLLATE NOCASE ASC
+    `).all();
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT atualizar observação de documento
+router.put('/documents/:id/observation', (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const observation = req.body?.observation == null ? null : String(req.body.observation);
+
+    const exists = db.prepare('SELECT id FROM documents WHERE id = ?').get(id);
+    if (!exists) {
+      return res.status(404).json({ error: 'Documento não encontrado' });
+    }
+
+    db.prepare('UPDATE documents SET observation = ? WHERE id = ?').run(observation, id);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET busca global de documentos (todos os departamentos)
 router.get('/search-documents', (req, res) => {
   try {

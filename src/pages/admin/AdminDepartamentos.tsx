@@ -45,6 +45,7 @@ const AdminDepartamentos = () => {
 
   const [deptForm, setDeptForm] = useState({ code: "", name: "", slug: "" });
   const [groupForm, setGroupForm] = useState({ name: "", department_id: 0 });
+  const [groupsDeptFilter, setGroupsDeptFilter] = useState("all");
 
   const fetchData = async () => {
     try {
@@ -154,6 +155,10 @@ const AdminDepartamentos = () => {
       toast.error("Erro ao excluir grupo.");
     }
   };
+
+  const filteredGroups = groupsDeptFilter === "all"
+    ? groups
+    : groups.filter((g) => String(g.department_id) === groupsDeptFilter);
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -271,48 +276,63 @@ const AdminDepartamentos = () => {
       </div>
 
       {/* ── Grupos ── */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <h2 className="text-xl font-semibold text-foreground">Grupos</h2>
-        <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" onClick={openNewGroup}>
-              <Plus size={16} className="mr-2" />Novo Grupo
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingGroup ? "Editar Grupo" : "Novo Grupo"}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div>
-                <Label>Nome</Label>
-                <Input
-                  value={groupForm.name}
-                  onChange={e => setGroupForm({ ...groupForm, name: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Departamento</Label>
-                <Select
-                  value={String(groupForm.department_id)}
-                  onValueChange={v => setGroupForm({ ...groupForm, department_id: Number(v) })}
-                >
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {depts.map(d => (
-                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="w-full" onClick={saveGroup} disabled={saving}>
-                {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
-                Salvar
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select value={groupsDeptFilter} onValueChange={setGroupsDeptFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Filtrar por departamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os departamentos</SelectItem>
+              {depts.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.code} - {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" onClick={openNewGroup}>
+                <Plus size={16} className="mr-2" />Novo Grupo
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingGroup ? "Editar Grupo" : "Novo Grupo"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div>
+                  <Label>Nome</Label>
+                  <Input
+                    value={groupForm.name}
+                    onChange={e => setGroupForm({ ...groupForm, name: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Departamento</Label>
+                  <Select
+                    value={String(groupForm.department_id)}
+                    onValueChange={v => setGroupForm({ ...groupForm, department_id: Number(v) })}
+                  >
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {depts.map(d => (
+                        <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button className="w-full" onClick={saveGroup} disabled={saving}>
+                  {saving && <Loader2 size={14} className="mr-2 animate-spin" />}
+                  Salvar
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl shadow-card border border-border overflow-hidden">
@@ -326,14 +346,14 @@ const AdminDepartamentos = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {groups.length === 0 ? (
+            {filteredGroups.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
-                  Nenhum grupo encontrado.
+                  Nenhum grupo encontrado para o filtro selecionado.
                 </TableCell>
               </TableRow>
             ) : (
-              groups.map(g => (
+              filteredGroups.map(g => (
                 <TableRow key={g.id}>
                   <TableCell className="font-medium">{g.name}</TableCell>
                   <TableCell className="text-muted-foreground">{g.department_name}</TableCell>

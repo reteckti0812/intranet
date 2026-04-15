@@ -34,6 +34,14 @@ function parseDepartmentFolder(folderName) {
 
 function parseDocumentFile(fileNameWithoutExt) {
   const clean = String(fileNameWithoutExt || '').trim();
+  const parts = clean.split(/\s-\s(.+)/);
+  if (parts.length >= 3) {
+    return {
+      code: parts[0].trim(),
+      title: parts[1].trim(),
+    };
+  }
+
   const match = clean.match(/^(\d+)\s*[-_]?\s*(.*)$/);
 
   if (match && match[2].trim()) {

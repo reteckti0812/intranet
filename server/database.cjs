@@ -47,10 +47,19 @@ db.prepare(`
     title TEXT NOT NULL,
     file_path TEXT UNIQUE NOT NULL,
     file_type TEXT,
+    observation TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
   )
 `).run();
+
+(function migrateDocumentsColumns() {
+  const cols = db.prepare(`PRAGMA table_info(documents)`).all();
+  const names = new Set(cols.map((c) => c.name));
+  if (!names.has('observation')) {
+    db.exec(`ALTER TABLE documents ADD COLUMN observation TEXT`);
+  }
+})();
 
 db.prepare(`
   CREATE TABLE IF NOT EXISTS home_content (

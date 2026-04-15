@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Megaphone, FileEdit, Building2, FolderSync,
-  Users, LogOut, ChevronLeft, Menu, ExternalLink
+  Users, LogOut, ChevronLeft, Menu, ExternalLink, Files
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -11,7 +11,8 @@ const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Megaphone, label: "Avisos", path: "/admin/avisos" },
   { icon: FileEdit, label: "Conteúdo Home", path: "/admin/conteudo-home" },
-  { icon: Building2, label: "Departamentos", path: "/admin/departamentos" },
+  { icon: Building2, label: "Dep. e Grp.", path: "/admin/departamentos" },
+  { icon: Files, label: "Documentos", path: "/admin/documentos" },
   { icon: FolderSync, label: "Sincronizar Docs", path: "/admin/sincronizar" },
   { icon: Users, label: "Usuários Admin", path: "/admin/usuarios" },
 ];

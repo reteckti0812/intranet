@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminConteudoHome from "./pages/admin/AdminConteudoHome";
 import AdminDepartamentos from "./pages/admin/AdminDepartamentos";
+import AdminDocumentos from "./pages/admin/AdminDocumentos";
 import AdminSincronizar from "./pages/admin/AdminSincronizar";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 
@@ -70,6 +71,13 @@ const AppRoutes = () => {
           <ProtectedRoute>
             <AdminLayout>
               <AdminDepartamentos />
+            </AdminLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/documentos" element={
+          <ProtectedRoute>
+            <AdminLayout>
+              <AdminDocumentos />
             </AdminLayout>
           </ProtectedRoute>
         } />
