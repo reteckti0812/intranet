@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom"; // Adicionado Link
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Lock, Mail, Loader2, AlertCircle, ArrowLeft } from "lucide-react"; // Adicionado ArrowLeft
+import { Lock, Mail, Loader2, AlertCircle } from "lucide-react";
 import api from "@/lib/api";
 
 const AdminLogin = () => {
@@ -10,6 +10,9 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const expired = params.get("expired") === "1";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,13 +28,16 @@ const AdminLogin = () => {
           name: string;
           email: string;
           role?: string;
+          departments?: { id: number; code: string; name: string }[];
         };
         localStorage.setItem("admin_token", response.data.token);
-        localStorage.setItem(
-          "admin_user",
-          JSON.stringify({ ...admin, role: admin.role === "super" ? "super" : "admin" })
-        );
-        navigate("/admin");
+        localStorage.setItem("admin_user", JSON.stringify(admin));
+        const next = params.get("next");
+        if (next) {
+          navigate(decodeURIComponent(next), { replace: true });
+        } else {
+          navigate(admin.role === "user" ? "/" : "/admin", { replace: true });
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "E-mail ou senha incorretos.");
@@ -45,9 +51,15 @@ const AdminLogin = () => {
       <div className="bg-card rounded-2xl shadow-card-hover border border-border p-8 w-full max-w-sm">
         <div className="text-center mb-8">
           <img src={logo} alt="Re-Teck" className="h-12 mx-auto mb-4" />
-          <h1 className="text-xl font-bold text-foreground">Área Administrativa</h1>
+          <h1 className="text-xl font-bold text-foreground">Intranet Re-Teck</h1>
           <p className="text-sm text-muted-foreground mt-1">Faça login para continuar</p>
         </div>
+
+        {expired && !error && (
+          <div className="bg-warning/10 text-warning-foreground text-sm p-3 rounded-lg mb-4 border border-warning/20">
+            Sua sessão expirou. Entre novamente para continuar.
+          </div>
+        )}
 
         {error && (
           <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg flex items-center gap-2 mb-4 border border-destructive/20">
@@ -101,15 +113,6 @@ const AdminLogin = () => {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-border flex flex-col gap-3">
-          <Link
-            to="/"
-            className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2"
-          >
-            <ArrowLeft size={16} />
-            Voltar para a Intranet
-          </Link>
-        </div>
       </div>
     </div>
   );

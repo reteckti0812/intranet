@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Header from "./components/Header";
 import AdminLayout from "./components/admin/AdminLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
+import { RequireAuth, RequireAdmin } from "./components/ProtectedRoute";
 
 // Pages públicas
 import Home from "./pages/Home";
@@ -21,7 +21,8 @@ import AdminAvisos from "./pages/admin/AdminAvisos";
 import AdminConteudoHome from "./pages/admin/AdminConteudoHome";
 import AdminDepartamentos from "./pages/admin/AdminDepartamentos";
 import AdminDocumentos from "./pages/admin/AdminDocumentos";
-import AdminSincronizar from "./pages/admin/AdminSincronizar";
+import AdminISO from "./pages/admin/AdminISO";
+import AdminAuditoria from "./pages/admin/AdminAuditoria";
 import AdminUsuarios from "./pages/admin/AdminUsuarios";
 
 const queryClient = new QueryClient();
@@ -29,71 +30,79 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const location = useLocation();
   const isAdminArea = location.pathname.startsWith("/admin");
-  const isLoginPage = location.pathname === "/admin/login";
+  const isLoginPage = location.pathname === "/admin/login" || location.pathname === "/login";
 
   return (
     <>
-      {/* Header público só aparece fora do admin */}
-      {!isAdminArea && <Header />}
+      {/* Header público só aparece fora do admin e fora do login */}
+      {!isAdminArea && !isLoginPage && <Header />}
 
       <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/" element={<Home />} />
-        <Route path="/departamentos" element={<DepartmentsList />} />
-        <Route path="/departamentos/:slug" element={<DepartmentDetail />} />
-
         {/* Login (sem proteção, sem AdminLayout) */}
+        <Route path="/login" element={<AdminLogin />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Rotas Públicas — exigem login (site inteiro protegido) */}
+        <Route path="/" element={<RequireAuth><Home /></RequireAuth>} />
+        <Route path="/departamentos" element={<RequireAuth><DepartmentsList /></RequireAuth>} />
+        <Route path="/departamentos/:slug" element={<RequireAuth><DepartmentDetail /></RequireAuth>} />
 
         {/* Rotas Admin — protegidas + com AdminLayout */}
         <Route path="/admin" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminDashboard />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
         <Route path="/admin/avisos" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminAvisos />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
         <Route path="/admin/conteudo-home" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminConteudoHome />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
         <Route path="/admin/departamentos" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminDepartamentos />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
         <Route path="/admin/documentos" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminDocumentos />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
-        <Route path="/admin/sincronizar" element={
-          <ProtectedRoute>
+        <Route path="/admin/iso" element={
+          <RequireAdmin>
             <AdminLayout>
-              <AdminSincronizar />
+              <AdminISO />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
+        } />
+        <Route path="/admin/auditoria" element={
+          <RequireAdmin>
+            <AdminLayout>
+              <AdminAuditoria />
+            </AdminLayout>
+          </RequireAdmin>
         } />
         <Route path="/admin/usuarios" element={
-          <ProtectedRoute>
+          <RequireAdmin>
             <AdminLayout>
               <AdminUsuarios />
             </AdminLayout>
-          </ProtectedRoute>
+          </RequireAdmin>
         } />
 
         <Route path="*" element={<NotFound />} />

@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database.cjs');
+const { requireAuth, requireAdmin } = require('../middleware/auth.cjs');
 
 // Listar avisos
 // Se vier ?public=1, retorna só avisos válidos para a Home
-router.get('/', (req, res) => {
+router.get('/', requireAuth, (req, res) => {
   try {
     const { public: isPublic } = req.query;
 
@@ -33,7 +34,7 @@ router.get('/', (req, res) => {
 });
 
 // Criar novo aviso
-router.post('/', (req, res) => {
+router.post('/', requireAuth, requireAdmin, (req, res) => {
   try {
     const { title, content, expires_at, priority } = req.body;
 
@@ -60,7 +61,7 @@ router.post('/', (req, res) => {
 });
 
 // Editar aviso
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, (req, res) => {
   try {
     const { title, content, expires_at, priority } = req.body;
 
@@ -93,7 +94,7 @@ router.put('/:id', (req, res) => {
 });
 
 // Excluir aviso
-router.delete('/:id', (req, res) => {
+router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
   try {
     db.prepare('DELETE FROM announcements WHERE id = ?').run(req.params.id);
     res.json({ success: true, message: 'Aviso excluído com sucesso.' });

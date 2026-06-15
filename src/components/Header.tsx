@@ -1,23 +1,34 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
+import GlobalSearch from "./GlobalSearch";
+
+function readUser(): { name?: string; role?: string } | null {
+  try {
+    return JSON.parse(localStorage.getItem("admin_user") || "null");
+  } catch {
+    return null;
+  }
+}
+const normRole = (r?: string) =>
+  r === "owner" || r === "super" ? "owner" : r === "admin" ? "admin" : "user";
 
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const user = readUser();
+  const role = normRole(user?.role);
+  const isAdmin = role === "owner" || role === "admin";
+
   const isActive = (path: string) => location.pathname === path;
 
-  const handleAdminClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem("admin_token");
-    if (token) {
-      navigate("/admin"); // Já logado → vai direto pro dashboard
-    } else {
-      navigate("/admin/login"); // Não logado → vai pro login
-    }
+  const logout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    navigate("/login");
   };
 
   return (
@@ -31,6 +42,10 @@ const Header = () => {
               <p className="text-xs text-muted-foreground">On-Line</p>
             </div>
           </Link>
+
+          <div className="hidden md:block flex-1 max-w-md mx-6">
+            <GlobalSearch />
+          </div>
 
           <nav className="hidden md:flex items-center gap-1">
             <Link
@@ -49,13 +64,25 @@ const Header = () => {
             >
               Departamentos
             </Link>
-            <a
-              href="/admin"
-              onClick={handleAdminClick}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
-            >
-              Admin
-            </a>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent transition-colors"
+              >
+                Admin
+              </Link>
+            )}
+
+            <div className="flex items-center gap-2 ml-2 pl-3 border-l border-border">
+              {user?.name && <span className="text-sm text-muted-foreground hidden lg:inline">{user.name}</span>}
+              <button
+                onClick={logout}
+                title="Sair"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-foreground hover:bg-accent hover:text-primary transition-colors"
+              >
+                <LogOut size={16} /> Sair
+              </button>
+            </div>
           </nav>
 
           <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)}>
@@ -65,15 +92,18 @@ const Header = () => {
 
         {mobileOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-1">
+            <div className="px-1 pb-2"><GlobalSearch /></div>
             <Link to="/" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Home</Link>
             <Link to="/departamentos" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Departamentos</Link>
-            <a
-              href="/admin"
-              onClick={(e) => { e.preventDefault(); handleAdminClick(e); setMobileOpen(false); }}
-              className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent"
+            {isAdmin && (
+              <Link to="/admin" className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-accent" onClick={() => setMobileOpen(false)}>Admin</Link>
+            )}
+            <button
+              onClick={() => { logout(); setMobileOpen(false); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-left hover:bg-accent"
             >
-              Admin
-            </a>
+              <LogOut size={16} /> Sair{user?.name ? ` (${user.name})` : ""}
+            </button>
           </nav>
         )}
       </div>

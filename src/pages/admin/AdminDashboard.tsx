@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  Building2, Layers, FileText, Calendar, Plus, RefreshCw,
-  FolderOpen, CheckCircle2, AlertTriangle, Loader2, Pencil, Trash2,
-  Globe, HardDrive,
+  Building2, Layers, FileText, AlertTriangle, Plus, FilePlus2,
+  ScrollText, Loader2, Pencil, Trash2, Clock, ShieldCheck,
 } from "lucide-react";
 import api from "@/lib/api";
 
@@ -14,57 +12,71 @@ interface Announcement {
   expires_at: string;
 }
 
+interface DocRow {
+  status: string;
+  review_date: string | null;
+  is_deleted: number;
+}
+
+interface IsoRow {
+  expiry_date: string | null;
+}
+
 interface Stats {
   depts: number;
   groups: number;
   docs: number;
-  lastSyncIntranet: string;
-  lastSyncDocuments: string;
+  pending: number;
+  reviewDue: number;
+  isoAlert: number;
 }
 
-function formatLastSync(iso: string | null | undefined): string {
-  if (!iso) return "—";
+function isReviewDue(iso: string | null): boolean {
+  if (!iso) return false;
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("pt-BR");
+  if (Number.isNaN(d.getTime())) return false;
+  const in30 = new Date();
+  in30.setDate(in30.getDate() + 30);
+  return d <= in30;
+}
+
+// ISO vencida ou vencendo nos próximos 60 dias
+function isoNeedsAttention(iso: string | null): boolean {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  const limit = new Date();
+  limit.setDate(limit.getDate() + 60);
+  return d <= limit;
 }
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<Stats>({
-    depts: 0,
-    groups: 0,
-    docs: 0,
-    lastSyncIntranet: "—",
-    lastSyncDocuments: "—",
-  });
+  const [stats, setStats] = useState<Stats>({ depts: 0, groups: 0, docs: 0, pending: 0, reviewDue: 0, isoAlert: 0 });
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [syncingKind, setSyncingKind] = useState<"intranet" | "documentos" | null>(null);
-  const [syncResult, setSyncResult] = useState<{ success: boolean; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const [deptsRes, announcementsRes, syncStatusRes] = await Promise.all([
+      const [deptsRes, announcementsRes, docsRes, isoRes] = await Promise.all([
         api.get("/departments"),
         api.get("/announcements"),
-        api.get("/sync/status").catch(() => ({ data: null })),
+        api.get("/documents").catch(() => ({ data: [] })),
+        api.get("/iso").catch(() => ({ data: [] })),
       ]);
 
       const depts = deptsRes.data;
       const totalGroups = depts.reduce((acc: number, d: any) => acc + (d.group_count || 0), 0);
-      const totalDocs = depts.reduce((acc: number, d: any) => acc + (d.doc_count || 0), 0);
-
-      const sync = syncStatusRes.data as {
-        intranet?: { lastSyncAt?: string | null };
-        documents?: { lastSyncAt?: string | null };
-      } | null;
+      const docs = (docsRes.data as DocRow[]) || [];
+      const isos = (isoRes.data as IsoRow[]) || [];
 
       setStats({
         depts: depts.length,
         groups: totalGroups,
-        docs: totalDocs,
-        lastSyncIntranet: formatLastSync(sync?.intranet?.lastSyncAt ?? null),
-        lastSyncDocuments: formatLastSync(sync?.documents?.lastSyncAt ?? null),
+        docs: docs.length,
+        pending: docs.filter((d) => d.status !== "aprovado" && d.status !== "obsoleto").length,
+        reviewDue: docs.filter((d) => d.status === "aprovado" && isReviewDue(d.review_date)).length,
+        isoAlert: isos.filter((i) => isoNeedsAttention(i.expiry_date)).length,
       });
 
       setAnnouncements(announcementsRes.data.slice(0, 5));
@@ -76,24 +88,6 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
-
-  const runSync = async (kind: "intranet" | "documentos") => {
-    setSyncingKind(kind);
-    setSyncResult(null);
-    const path = kind === "intranet" ? "/sync/pasta-para-site" : "/sync/bd-para-pasta";
-    try {
-      const response = await api.post(path);
-      setSyncResult({ success: true, message: response.data.message || "Concluído." });
-      await fetchData();
-    } catch (err: any) {
-      setSyncResult({
-        success: false,
-        message: err.response?.data?.message || "Erro na sincronização.",
-      });
-    } finally {
-      setSyncingKind(null);
-    }
-  };
 
   const handleDeleteAnnouncement = async (id: number) => {
     if (!confirm("Deseja excluir este aviso?")) return;
@@ -113,47 +107,27 @@ const AdminDashboard = () => {
     );
   }
 
+  const cards = [
+    { label: "Departamentos", value: stats.depts, icon: Building2, color: "bg-primary" },
+    { label: "Grupos", value: stats.groups, icon: Layers, color: "bg-info" },
+    { label: "Documentos", value: stats.docs, icon: FileText, color: "bg-success" },
+    { label: "Pendentes de aprovação", value: stats.pending, icon: AlertTriangle, color: "bg-warning" },
+    { label: "Revisões vencendo (30d)", value: stats.reviewDue, icon: Clock, color: "bg-destructive" },
+    { label: "ISOs em alerta (60d)", value: stats.isoAlert, icon: ShieldCheck, color: "bg-destructive" },
+  ];
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-foreground mb-8">Dashboard</h1>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Departamentos", value: stats.depts, icon: Building2, color: "bg-primary" },
-          { label: "Grupos", value: stats.groups, icon: Layers, color: "bg-info" },
-          { label: "Documentos Ativos", value: stats.docs, icon: FileText, color: "bg-success" },
-          {
-            label: "Últimas sincronizações",
-            value: null as string | null,
-            icon: Calendar,
-            color: "bg-warning",
-            syncLines: [
-              { k: "→ Intranet", v: stats.lastSyncIntranet },
-              { k: "→ Pastas", v: stats.lastSyncDocuments },
-            ],
-          },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-card rounded-xl p-5 shadow-card border border-border">
-            <div className="flex items-center justify-between mb-3">
-              <span className={`${stat.color} text-primary-foreground p-2 rounded-lg`}>
-                <stat.icon size={20} />
-              </span>
-            </div>
-            {"syncLines" in stat && stat.syncLines ? (
-              <div className="space-y-2">
-                {stat.syncLines.map((line) => (
-                  <div key={line.k}>
-                    <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                      {line.k}
-                    </p>
-                    <p className="text-sm font-bold text-foreground leading-tight">{line.v}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-            )}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
+        {cards.map((stat) => (
+          <div key={stat.label} className="bg-card rounded-xl p-5 shadow-card border border-border hover-lift animate-rise">
+            <span className={`${stat.color} text-primary-foreground p-2 rounded-lg inline-flex mb-3`}>
+              <stat.icon size={20} />
+            </span>
+            <p className="text-2xl font-bold text-foreground">{stat.value}</p>
             <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
           </div>
         ))}
@@ -162,11 +136,8 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <h2 className="text-lg font-semibold text-foreground mb-4">Ações Rápidas</h2>
       <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <Link
-          to="/admin/avisos?new=1"
-          className="flex items-center gap-3 bg-primary text-primary-foreground rounded-xl p-5 hover:opacity-90 transition-opacity"
-          title="Novo Aviso"
-        >
+        <Link to="/admin/avisos?new=1"
+          className="flex items-center gap-3 bg-primary text-primary-foreground rounded-xl p-5 hover:opacity-90 transition-opacity">
           <Plus size={24} />
           <div className="text-left">
             <p className="font-semibold">Novo Aviso</p>
@@ -174,85 +145,46 @@ const AdminDashboard = () => {
           </div>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => runSync("intranet")}
-          disabled={syncingKind !== null}
-          className="flex items-center gap-3 bg-info text-info-foreground rounded-xl p-5 hover:opacity-90 transition-opacity disabled:opacity-60 text-left"
-        >
-          {syncingKind === "intranet" ? (
-            <RefreshCw size={24} className="animate-spin shrink-0" />
-          ) : (
-            <Globe size={24} className="shrink-0" />
-          )}
-          <div className="min-w-0">
-            <p className="font-semibold">
-              {syncingKind === "intranet" ? "A sincronizar…" : "Sincronizar a Intranet"}
-            </p>
-            <p className="text-xs opacity-80">Pastas Documentos → site</p>
+        <Link to="/admin/documentos"
+          className="flex items-center gap-3 bg-info text-info-foreground rounded-xl p-5 hover:opacity-90 transition-opacity">
+          <FilePlus2 size={24} />
+          <div className="text-left">
+            <p className="font-semibold">Documentos</p>
+            <p className="text-xs opacity-80">Versões e aprovação</p>
           </div>
-        </button>
+        </Link>
 
-        <button
-          type="button"
-          onClick={() => runSync("documentos")}
-          disabled={syncingKind !== null}
-          className="flex items-center gap-3 bg-secondary text-secondary-foreground rounded-xl p-5 hover:opacity-90 transition-opacity disabled:opacity-60 border border-border text-left"
-        >
-          {syncingKind === "documentos" ? (
-            <RefreshCw size={24} className="animate-spin shrink-0" />
-          ) : (
-            <HardDrive size={24} className="shrink-0" />
-          )}
-          <div className="min-w-0">
-            <p className="font-semibold">
-              {syncingKind === "documentos" ? "A sincronizar…" : "Sincronizar os documentos"}
-            </p>
-            <p className="text-xs opacity-80">Base de dados → pasta Documentos</p>
+        <Link to="/admin/departamentos"
+          className="flex items-center gap-3 bg-secondary text-secondary-foreground border border-border rounded-xl p-5 hover:opacity-90 transition-opacity">
+          <Building2 size={24} />
+          <div className="text-left">
+            <p className="font-semibold">Departamentos</p>
+            <p className="text-xs opacity-80">Grupos e estrutura</p>
           </div>
-        </button>
+        </Link>
 
-        <button
-          type="button"
-          onClick={() => api.get("/open-folder").catch(() => {})}
-          className="flex items-center gap-3 bg-warning text-warning-foreground rounded-xl p-5 hover:opacity-90 transition-opacity text-left"
-        >
-          <FolderOpen size={24} className="shrink-0" />
-          <div className="min-w-0">
-            <p className="font-semibold">Abrir Pasta</p>
-            <p className="text-xs opacity-80">C:\Intranet\Documentos</p>
+        <Link to="/admin/auditoria"
+          className="flex items-center gap-3 bg-warning text-warning-foreground rounded-xl p-5 hover:opacity-90 transition-opacity">
+          <ScrollText size={24} />
+          <div className="text-left">
+            <p className="font-semibold">Auditoria</p>
+            <p className="text-xs opacity-80">Histórico de ações</p>
           </div>
-        </button>
+        </Link>
       </div>
-
-      {/* Sync Result */}
-      {syncResult && (
-        <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 border text-sm font-medium
-          ${syncResult.success
-            ? "bg-green-500/10 border-green-500/20 text-green-600"
-            : "bg-destructive/10 border-destructive/20 text-destructive"}`}
-        >
-          {syncResult.success ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
-          {syncResult.message}
-        </div>
-      )}
 
       {/* Announcements Preview */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Avisos Recentes</h2>
-          <Link to="/admin/avisos" className="text-sm text-primary font-medium hover:underline">
-            Ver todos
-          </Link>
+          <Link to="/admin/avisos" className="text-sm text-primary font-medium hover:underline">Ver todos</Link>
         </div>
 
         <div className="bg-card rounded-xl shadow-card border border-border overflow-hidden">
           {announcements.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground text-sm">
               Nenhum aviso cadastrado ainda.{" "}
-              <Link to="/admin/avisos?new=1" className="text-primary hover:underline font-medium">
-                Criar o primeiro
-              </Link>
+              <Link to="/admin/avisos?new=1" className="text-primary hover:underline font-medium">Criar o primeiro</Link>
             </div>
           ) : (
             <table className="w-full text-sm">
@@ -268,24 +200,16 @@ const AdminDashboard = () => {
                   <tr key={a.id} className="border-b border-border last:border-0 hover:bg-accent/50 transition-colors">
                     <td className="px-4 py-3 text-foreground">{a.title}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {a.expires_at
-                        ? new Date(a.expires_at).toLocaleDateString("pt-BR")
-                        : "Sem validade"}
+                      {a.expires_at ? new Date(a.expires_at).toLocaleDateString("pt-BR") : "Sem validade"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => navigate("/admin/avisos")}
-                          className="p-1.5 rounded-lg hover:bg-accent transition-colors text-primary"
-                          title="Editar"
-                        >
+                        <button onClick={() => navigate("/admin/avisos")}
+                          className="p-1.5 rounded-lg hover:bg-accent transition-colors text-primary" title="Editar">
                           <Pencil size={15} />
                         </button>
-                        <button
-                          onClick={() => handleDeleteAnnouncement(a.id)}
-                          className="p-1.5 rounded-lg hover:bg-accent transition-colors text-destructive"
-                          title="Excluir"
-                        >
+                        <button onClick={() => handleDeleteAnnouncement(a.id)}
+                          className="p-1.5 rounded-lg hover:bg-accent transition-colors text-destructive" title="Excluir">
                           <Trash2 size={15} />
                         </button>
                       </div>

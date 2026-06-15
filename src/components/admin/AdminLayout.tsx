@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Megaphone, FileEdit, Building2, FolderSync,
-  Users, LogOut, ChevronLeft, Menu, ExternalLink, Files
+  LayoutDashboard, Megaphone, FileEdit, Building2, ScrollText,
+  Users, LogOut, ChevronLeft, Menu, ExternalLink, Files, ShieldCheck
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
@@ -13,8 +13,9 @@ const menuItems = [
   { icon: FileEdit, label: "Conteúdo Home", path: "/admin/conteudo-home" },
   { icon: Building2, label: "Dep. e Grp.", path: "/admin/departamentos" },
   { icon: Files, label: "Documentos", path: "/admin/documentos" },
-  { icon: FolderSync, label: "Sincronizar Docs", path: "/admin/sincronizar" },
-  { icon: Users, label: "Usuários Admin", path: "/admin/usuarios" },
+  { icon: ShieldCheck, label: "Validade ISOs", path: "/admin/iso" },
+  { icon: ScrollText, label: "Auditoria", path: "/admin/auditoria" },
+  { icon: Users, label: "Usuários", path: "/admin/usuarios" },
 ];
 
 function readAdminLabel(): string {
@@ -22,7 +23,7 @@ function readAdminLabel(): string {
     const raw = localStorage.getItem("admin_user");
     if (!raw) return "Admin";
     const u = JSON.parse(raw) as { name?: string; email?: string; role?: string };
-    const rolePt = u.role === "super" ? "Super Admin" : "Admin";
+    const rolePt = u.role === "owner" || u.role === "super" ? "Owner" : "Admin";
     return u.name ? `${u.name} (${rolePt})` : rolePt;
   } catch {
     return "Admin";
@@ -50,10 +51,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-background">
       {/* Fixed Sidebar */}
-      <aside className={`${sidebarWidth} fixed top-0 left-0 h-screen bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-200 z-30 overflow-y-auto`}>
-        <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
+      <aside className={`${sidebarWidth} fixed top-0 left-0 h-screen bg-card text-foreground border-r border-border flex flex-col transition-all duration-200 z-30 overflow-y-auto`}>
+        <div className="p-4 flex items-center gap-3 border-b border-border h-16">
           {sidebarOpen && <img src={logo} alt="Re-Teck" className="h-8" />}
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto p-1 rounded hover:bg-sidebar-accent">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="ml-auto p-1.5 rounded-lg hover:bg-accent text-muted-foreground transition-colors">
             {sidebarOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
           </button>
         </div>
@@ -64,22 +65,24 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  active ? "bg-sidebar-accent text-sidebar-primary" : "hover:bg-sidebar-accent/50"
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-foreground/80 hover:bg-accent hover:text-accent-foreground hover:translate-x-0.5"
                 }`}
                 title={item.label}
               >
-                <item.icon size={18} />
+                <item.icon size={18} className={active ? "" : "text-primary"} />
                 {sidebarOpen && <span>{item.label}</span>}
               </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-border">
           {sidebarOpen && (
-            <p className="text-xs opacity-60 mb-2 leading-snug">Logado como: {adminLabel}</p>
+            <p className="text-xs text-muted-foreground mb-2 leading-snug">Logado como: {adminLabel}</p>
           )}
-          <button onClick={handleLogout} className="flex items-center gap-2 text-sm hover:text-sidebar-primary transition-colors w-full">
+          <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors w-full">
             <LogOut size={16} />
             {sidebarOpen && <span>Sair</span>}
           </button>
@@ -98,7 +101,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             Ver Site
           </Link>
         </header>
-        <main className="p-8">{children}</main>
+        <main key={location.pathname} className="p-8 animate-rise">{children}</main>
       </div>
     </div>
   );

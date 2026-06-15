@@ -1,13 +1,63 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
-  FileText, Heart, Target, Handshake, Eye,
-  Building2, BookOpen, Shield, Phone,
+  FileText, Building2, BookOpen, Shield, Phone,
   ChevronRight, Megaphone, Leaf, Loader2, Download, ExternalLink, FileSpreadsheet, FileCode
 } from "lucide-react";
 import api from "@/lib/api";
 import { useHomeContent } from "@/hooks/useHomeContent";
 import { HomeRichText } from "@/components/HomeRichText";
+import { deptEmoji } from "@/lib/deptEmoji";
+import { publicDownloadUrl } from "@/lib/docsUrl";
+import { viewFromApi } from "@/lib/download";
+import { toast } from "sonner";
+
+interface RecentDoc {
+  id: number;
+  code: string | null;
+  title: string;
+  file_type: string | null;
+  version_number: number;
+  updated_at: string;
+  department_name: string;
+}
+
+const fmtDateShort = (iso?: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
+};
+import {
+  CONTACT_COLUMNS, EXTERNAL_COLUMNS, parseTableRows, isJsonTable, type TableColumn,
+} from "@/lib/homeTables";
+
+function HomeTable({ rows, columns }: { rows: Record<string, string>[]; columns: TableColumn[] }) {
+  if (!rows.length) return <p className="text-xs text-muted-foreground">Nada cadastrado.</p>;
+  return (
+    <div className="overflow-x-auto -mx-1 px-1">
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="text-left text-muted-foreground border-b border-border">
+            {columns.map((c) => <th key={c.key} className="py-1.5 pr-3 font-medium">{c.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b border-border/60 last:border-0">
+              {columns.map((c) => (
+                <td key={c.key} className="py-1.5 pr-3 align-top text-foreground/90">
+                  {c.key === "email" && r[c.key]
+                    ? <a href={`mailto:${r[c.key]}`} className="text-primary hover:underline break-all">{r[c.key]}</a>
+                    : (r[c.key] || "—")}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 interface Department {
   id: number;
@@ -51,6 +101,13 @@ const Home = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [deptLoading, setDeptLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [recentDocs, setRecentDocs] = useState<RecentDoc[]>([]);
+
+  useEffect(() => {
+    api.get("/documents/recent", { params: { limit: 6 } })
+      .then((res) => setRecentDocs(res.data))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.get("/departments?public=1")
@@ -67,11 +124,11 @@ const Home = () => {
   }, []);
 
   const officialDocs = [
-    { icon: FileText, title: "Documentos Oficiais", desc: content?.official_documents },
-    { icon: Heart,    title: "Valores",             desc: content?.values },
-    { icon: Target,   title: "Missão",              desc: content?.mission },
-    { icon: Handshake,title: "Compromisso",         desc: content?.commitment },
-    { icon: Eye,      title: "Visão",               desc: content?.vision },
+    { emoji: "📋", title: "Documentos Oficiais", desc: content?.official_documents },
+    { emoji: "❤️", title: "Valores",             desc: content?.values },
+    { emoji: "🎯", title: "Missão",              desc: content?.mission },
+    { emoji: "🤝", title: "Compromisso",         desc: content?.commitment },
+    { emoji: "🔭", title: "Visão",               desc: content?.vision },
   ];
 
   const reteckLegacy = content?.reteck_way?.trim();
@@ -145,9 +202,9 @@ const Home = () => {
             {officialDocs.slice(0, 3).map((d) => (
               <div
                 key={d.title}
-                className="bg-card rounded-xl p-5 shadow-card hover:shadow-card-hover transition-shadow border border-border"
+                className="bg-card rounded-xl p-5 shadow-card border border-border hover-lift animate-rise"
               >
-                <d.icon size={28} className="text-primary mb-3" />
+                <div className="text-3xl mb-3 leading-none">{d.emoji}</div>
                 <h3 className="font-semibold text-foreground text-sm">{d.title}</h3>
                 {d.desc ? (
                   <HomeRichText content={d.desc} className="text-xs text-muted-foreground mt-1" />
@@ -161,9 +218,9 @@ const Home = () => {
             {officialDocs.slice(3).map((d) => (
               <div
                 key={d.title}
-                className="bg-card rounded-xl p-5 shadow-card hover:shadow-card-hover transition-shadow border border-border"
+                className="bg-card rounded-xl p-5 shadow-card border border-border hover-lift animate-rise"
               >
-                <d.icon size={28} className="text-primary mb-3" />
+                <div className="text-3xl mb-3 leading-none">{d.emoji}</div>
                 <h3 className="font-semibold text-foreground text-sm">{d.title}</h3>
                 {d.desc ? (
                   <HomeRichText content={d.desc} className="text-xs text-muted-foreground mt-1" />
@@ -228,21 +285,23 @@ const Home = () => {
             Departamentos
           </h2>
           <div className="grid sm:grid-cols-2 gap-3">
-            {departments.map((dept) => (
+            {departments.map((dept, i) => (
               <Link
                 key={dept.id}
                 to={`/departamentos/${dept.slug}`}
-                className="flex items-center justify-between bg-card rounded-xl px-4 py-3 shadow-card hover:shadow-card-hover border border-border transition-all hover:border-primary/30 group"
+                style={{ animationDelay: `${i * 40}ms` }}
+                className="flex items-center gap-3 bg-card rounded-xl px-4 py-3 shadow-card border border-border hover-lift animate-rise group"
               >
-                <div className="flex items-center gap-3">
-                  <span className="bg-primary text-primary-foreground text-xs font-bold rounded-lg w-8 h-8 flex items-center justify-center">
-                    {dept.code}
-                  </span>
-                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                <span className="shrink-0 w-11 h-11 flex items-center justify-center text-2xl bg-secondary rounded-xl">
+                  {deptEmoji(dept.name, dept.code)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                     {dept.name}
-                  </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Departamento {dept.code}</p>
                 </div>
-                <ChevronRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                <ChevronRight size={18} className="text-primary shrink-0" />
               </Link>
             ))}
           </div>
@@ -340,10 +399,37 @@ const Home = () => {
         <aside className="space-y-6 min-w-0">
           <div className="bg-card rounded-xl p-5 shadow-card border border-border min-w-0">
             <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+              <span className="text-lg leading-none">🆕</span> Atualizados recentemente
+            </h3>
+            {recentDocs.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Nada recente por aqui.</p>
+            ) : (
+              <div className="space-y-1">
+                {recentDocs.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => viewFromApi(publicDownloadUrl(d.id)).catch(() => toast.error("Não foi possível abrir o documento."))}
+                    className="flex items-start gap-2 w-full text-left p-2 rounded-lg hover:bg-accent transition-colors"
+                  >
+                    <FileText size={15} className="text-primary mt-0.5 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-foreground truncate">{d.code ? `${d.code} — ` : ""}{d.title}</span>
+                      <span className="block text-xs text-muted-foreground truncate">{d.department_name} · {fmtDateShort(d.updated_at)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card rounded-xl p-5 shadow-card border border-border min-w-0">
+            <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
               <Phone size={18} className="text-primary" />
               Ramais e Contatos
             </h3>
-            {content?.contacts?.trim() ? (
+            {isJsonTable(content?.contacts) ? (
+              <HomeTable rows={parseTableRows(content?.contacts)} columns={CONTACT_COLUMNS} />
+            ) : content?.contacts?.trim() ? (
               <div className="overflow-x-auto -mx-1 px-1">
                 <HomeRichText content={content.contacts} className="text-xs text-muted-foreground" />
               </div>
@@ -357,7 +443,9 @@ const Home = () => {
               <BookOpen size={18} className="text-primary" />
               Ligações Externas
             </h3>
-            {content?.external_calls?.trim() ? (
+            {isJsonTable(content?.external_calls) ? (
+              <HomeTable rows={parseTableRows(content?.external_calls)} columns={EXTERNAL_COLUMNS} />
+            ) : content?.external_calls?.trim() ? (
               <div className="overflow-x-auto -mx-1 px-1">
                 <HomeRichText content={content.external_calls} className="text-xs text-muted-foreground" />
               </div>

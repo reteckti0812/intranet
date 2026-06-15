@@ -10,7 +10,8 @@ export default defineConfig(() => ({
     hmr: {
       overlay: false,
     },
-    // Mesma origem que o front: /api e /docs vão para o Express (evita CSS/JS “sumirem” em rotas profundas ao usar só um host)
+    // Mesma origem que o front. Documentos de departamento saem por /api/documents;
+    // /docs serve apenas os anexos da Home (Lista Mestra / Documentos Gerais).
     proxy: {
       "/api": { target: "http://127.0.0.1:3001", changeOrigin: true },
       "/docs": { target: "http://127.0.0.1:3001", changeOrigin: true },

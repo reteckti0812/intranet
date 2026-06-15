@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, FolderOpen, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,12 +63,6 @@ const AdminDepartamentos = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
-
-  const openFolder = (path: string) => {
-    api.get(`/open-folder?path=${encodeURIComponent(path)}`).catch(() =>
-      toast.error("Não foi possível abrir a pasta.")
-    );
-  };
 
   // ── Departamentos ──────────────────────────────────────────
   const openNewDept = () => {
@@ -172,10 +166,6 @@ const AdminDepartamentos = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Departamentos</h1>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => openFolder("C:\\Intranet\\Documentos")}>
-            <FolderOpen size={16} className="mr-2" />Abrir Pasta Geral
-          </Button>
-
           <Dialog open={deptDialogOpen} onOpenChange={setDeptDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={openNewDept}><Plus size={16} className="mr-2" />Novo Departamento</Button>

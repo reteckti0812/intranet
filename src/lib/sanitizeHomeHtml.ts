@@ -52,7 +52,7 @@ const ALLOWED_TAGS = [
   "hr",
 ];
 
-const ALLOWED_ATTR = ["href", "target", "colspan", "rowspan", "span", "title"];
+const ALLOWED_ATTR = ["href", "target", "colspan", "rowspan", "span", "title", "type", "start"];
 
 let hooksInstalled = false;
 

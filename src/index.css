@@ -6,85 +6,100 @@
 
 @layer base {
   :root {
-    --background: 0 0% 97%;
-    --foreground: 210 20% 20%;
+    /* Paleta Re-Teck (alinhada ao Re-Teck AI Hub):
+       verde principal #2d8a47, escuro #1a6b2e, claro #4caf50, pálido #e8f5e9;
+       fundo #f3f4f6, superfícies #fff, borda #e5e7eb, texto #111827 / #6b7280. */
+    --background: 220 14% 96%;       /* #f3f4f6 */
+    --foreground: 222 39% 11%;       /* #111827 */
 
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 20%;
+    --card-foreground: 222 39% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 20%;
+    --popover-foreground: 222 39% 11%;
 
-    --primary: 152 60% 36%;
+    --primary: 137 51% 36%;          /* #2d8a47 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 40% 94%;
-    --secondary-foreground: 152 60% 26%;
+    --secondary: 125 39% 94%;        /* #e8f5e9 verde pálido */
+    --secondary-foreground: 135 61% 26%; /* #1a6b2e verde escuro */
 
-    --muted: 210 20% 95%;
-    --muted-foreground: 210 10% 50%;
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 9% 46%;  /* #6b7280 */
 
-    --accent: 152 50% 90%;
-    --accent-foreground: 152 60% 26%;
+    --accent: 125 39% 94%;           /* verde pálido (hover) */
+    --accent-foreground: 135 61% 26%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 51%;        /* #dc2626 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 89%;
-    --input: 210 15% 89%;
-    --ring: 152 60% 36%;
+    --border: 220 13% 91%;           /* #e5e7eb */
+    --input: 220 13% 91%;
+    --ring: 137 51% 36%;
 
-    --radius: 0.625rem;
+    --radius: 0.625rem;              /* 10px */
 
-    --sidebar-background: 152 56% 34%;
+    /* Sidebar admin — verde Re-Teck profundo (sensação do gradiente da marca) */
+    --sidebar-background: 137 56% 22%;
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 152 56% 28%;
-    --sidebar-accent: 152 48% 29%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 152 42% 38%;
-    --sidebar-ring: 152 60% 50%;
+    --sidebar-primary-foreground: 135 61% 22%;
+    --sidebar-accent: 137 44% 30%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 137 38% 32%;
+    --sidebar-ring: 122 39% 49%;     /* #4caf50 */
 
-    --success: 142 71% 45%;
+    --success: 137 50% 40%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --info: 210 80% 52%;
+    --warning: 38 92% 50%;           /* âmbar (admon-warning do hub) */
+    --warning-foreground: 40 90% 16%;
+    --info: 217 85% 58%;             /* #3b82f6 */
     --info-foreground: 0 0% 100%;
 
-    --hero-gradient: linear-gradient(135deg, hsl(152, 60%, 36%), hsl(160, 50%, 45%));
-    --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
-    --card-shadow-hover: 0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 2px 6px -2px rgba(0, 0, 0, 0.06);
+    --hero-gradient: linear-gradient(135deg, #0e4d24 0%, #1a6b2e 55%, #2d8a47 100%);
+    --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --card-shadow-hover: 0 2px 8px rgba(16, 24, 40, 0.08);
   }
 
   .dark {
-    --background: 210 20% 10%;
-    --foreground: 0 0% 95%;
-    --card: 210 20% 13%;
-    --card-foreground: 0 0% 95%;
-    --popover: 210 20% 13%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 152 60% 45%;
+    --background: 213 21% 7%;        /* #0e1116 */
+    --foreground: 220 14% 96%;
+    --card: 213 18% 11%;             /* #161b22 */
+    --card-foreground: 220 14% 96%;
+    --popover: 213 18% 11%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 122 39% 49%;          /* #4caf50 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 152 30% 18%;
-    --secondary-foreground: 152 40% 80%;
-    --muted: 210 20% 18%;
-    --muted-foreground: 210 10% 60%;
-    --accent: 152 30% 18%;
-    --accent-foreground: 152 40% 80%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 95%;
-    --border: 210 20% 20%;
-    --input: 210 20% 20%;
-    --ring: 152 60% 45%;
-    --sidebar-background: 152 40% 12%;
+    --secondary: 137 28% 16%;
+    --secondary-foreground: 122 40% 80%;
+    --muted: 213 14% 16%;
+    --muted-foreground: 220 9% 64%;
+    --accent: 137 28% 16%;
+    --accent-foreground: 122 40% 80%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 14% 19%;           /* #2a2f37 */
+    --input: 215 14% 19%;
+    --ring: 122 39% 49%;
+    --sidebar-background: 150 32% 8%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 152 60% 50%;
+    --sidebar-primary: 122 39% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 152 30% 18%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 152 30% 20%;
-    --sidebar-ring: 152 60% 50%;
+    --sidebar-accent: 137 24% 16%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 137 22% 20%;
+    --sidebar-ring: 122 39% 50%;
+
+    --success: 122 39% 49%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 40 90% 14%;
+    --info: 217 85% 62%;
+    --info-foreground: 0 0% 100%;
+
+    --hero-gradient: linear-gradient(135deg, #0b3a1b 0%, #145024 55%, #1f6b34 100%);
+    --card-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -137,6 +152,20 @@
     list-style-type: decimal;
     padding-left: 1.25rem;
     margin: 0.35rem 0;
+  }
+
+  /* Listas alfabéticas / romanas (atributo type), válido na home e no editor */
+  .home-rich-text ol[type="a"],
+  .prose-editor ol[type="a"] {
+    list-style-type: lower-alpha;
+  }
+  .home-rich-text ol[type="A"],
+  .prose-editor ol[type="A"] {
+    list-style-type: upper-alpha;
+  }
+  .home-rich-text ol[type="i"],
+  .prose-editor ol[type="i"] {
+    list-style-type: lower-roman;
   }
 
   .home-rich-text li {
@@ -200,4 +229,36 @@
   .shadow-card-hover {
     box-shadow: var(--card-shadow-hover);
   }
+
+  /* Entrada suave (igual aos cards do Re-Teck AI Hub) */
+  .animate-rise {
+    animation: rt-rise 0.4s ease both;
+  }
+  .animate-pop {
+    animation: rt-pop 0.24s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+  }
+
+  /* Elevação no hover: sobe um pouco, ganha borda verde e sombra */
+  .hover-lift {
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary));
+    box-shadow: var(--card-shadow-hover);
+  }
+}
+
+@keyframes rt-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes rt-pop {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise, .animate-pop { animation: none !important; }
+  .hover-lift { transition: none !important; }
 }

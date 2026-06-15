@@ -4,6 +4,7 @@ const db = require('../database.cjs');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const { requireAuth, requireAdmin } = require('../middleware/auth.cjs');
 
 const DOCS_ROOT = 'C:\\Intranet\\Documentos';
 const HOME_ROOT = path.join(DOCS_ROOT, '_Home');
@@ -70,8 +71,8 @@ const upload = multer({
   }),
 });
 
-// Buscar todo o conteúdo
-router.get('/', (req, res) => {
+// Buscar todo o conteúdo (qualquer usuário logado)
+router.get('/', requireAuth, (req, res) => {
   try {
     const rows = db.prepare('SELECT key, content FROM home_content').all();
     const result = {};
@@ -83,7 +84,7 @@ router.get('/', (req, res) => {
 });
 
 // Salvar múltiplos campos de uma vez
-router.post('/batch', (req, res) => {
+router.post('/batch', requireAuth, requireAdmin, (req, res) => {
   try {
     const fields = req.body; // { mission: "...", vision: "...", ... }
 
@@ -107,7 +108,7 @@ router.post('/batch', (req, res) => {
   }
 });
 
-router.post('/files/:type', upload.single('file'), (req, res) => {
+router.post('/files/:type', requireAuth, requireAdmin, upload.single('file'), (req, res) => {
   try {
     const { type } = req.params;
     const key = keyByType(type);
@@ -137,7 +138,7 @@ router.post('/files/:type', upload.single('file'), (req, res) => {
   }
 });
 
-router.delete('/files/:type/:id', (req, res) => {
+router.delete('/files/:type/:id', requireAuth, requireAdmin, (req, res) => {
   try {
     const { type, id } = req.params;
     const key = keyByType(type);

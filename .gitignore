@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Banco de dados (runtime) — não versionar
+server/intranet.db
+server/intranet.db-wal
+server/intranet.db-shm
+server/intranet.db.bak-*
+server/backups/
+server/jwt-secret.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -12,8 +12,22 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import api from "@/lib/api";
-import { hrefForDocumentPath } from "@/lib/docsUrl";
+import { publicDownloadUrl } from "@/lib/docsUrl";
+import { viewFromApi, downloadFromApi } from "@/lib/download";
+
+const fmtDate = (iso?: string | null) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
+};
+const isRecent = (iso?: string | null) => {
+  if (!iso) return false;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  return Date.now() - d.getTime() < 14 * 24 * 60 * 60 * 1000;
+};
 
 const DepartmentDetail = () => {
   const { slug } = useParams();
@@ -71,7 +85,7 @@ const DepartmentDetail = () => {
     ...group,
     documents: group.documents.filter((doc: any) =>
       doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.code.toLowerCase().includes(searchTerm.toLowerCase())
+      (doc.code || "").toLowerCase().includes(searchTerm.toLowerCase())
     )
   })).filter((group: any) => group.documents.length > 0);
 
@@ -120,23 +134,33 @@ const DepartmentDetail = () => {
                         <FileText size={20} />
                       </div>
                       <div>
-                        <h3 className="font-medium text-foreground">
-                          {doc.code ? `${doc.code} - ` : ""}{doc.title}
+                        <h3 className="font-medium text-foreground flex items-center gap-2 flex-wrap">
+                          <span>{doc.code ? `${doc.code} - ` : ""}{doc.title}</span>
+                          {isRecent(doc.updated_at) && (
+                            <span className="text-[10px] uppercase tracking-wide bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded-full">Novo</span>
+                          )}
                         </h3>
-                        <p className="text-xs text-muted-foreground uppercase">{doc.file_type}</p>
+                        <p className="text-xs text-muted-foreground">
+                          <span className="uppercase">{doc.file_type}</span>
+                          {doc.version_number ? <> · v{doc.version_number}</> : null}
+                          {doc.updated_at ? <> · atualizado em {fmtDate(doc.updated_at)}</> : null}
+                        </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={hrefForDocumentPath(doc.file_path)} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink size={16} className="mr-2" /> Visualizar
-                        </a>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => viewFromApi(publicDownloadUrl(doc.id)).catch(() => toast.error("Não foi possível abrir o documento."))}
+                      >
+                        <ExternalLink size={16} className="mr-2" /> Visualizar
                       </Button>
-                      <Button size="sm" asChild>
-                        <a href={hrefForDocumentPath(doc.file_path)} download>
-                          <Download size={16} className="mr-2" /> Download
-                        </a>
+                      <Button
+                        size="sm"
+                        onClick={() => downloadFromApi(publicDownloadUrl(doc.id), doc.file_name || doc.title).catch(() => toast.error("Não foi possível baixar o documento."))}
+                      >
+                        <Download size={16} className="mr-2" /> Download
                       </Button>
                     </div>
                   </div>

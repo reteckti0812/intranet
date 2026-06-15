@@ -3,7 +3,10 @@ import { Link } from "react-router-dom";
 import { Building2, ChevronRight, Home, FileText, Loader2, Search, FolderOpen, ExternalLink } from "lucide-react";
 import api from "@/lib/api";
 import { Input } from "@/components/ui/input";
-import { hrefForDocumentPath } from "@/lib/docsUrl";
+import { toast } from "sonner";
+import { publicDownloadUrl } from "@/lib/docsUrl";
+import { viewFromApi } from "@/lib/download";
+import { deptEmoji } from "@/lib/deptEmoji";
 
 interface Department {
   id: number;
@@ -19,7 +22,7 @@ interface SearchDocumentResult {
   id: number;
   code: string | null;
   title: string;
-  file_path: string;
+  file_name: string | null;
   file_type: string | null;
   group_id: number;
   group_name: string;
@@ -171,15 +174,13 @@ const DepartmentsList = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <a
-                        href={hrefForDocumentPath(doc.file_path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={() => viewFromApi(publicDownloadUrl(doc.id)).catch(() => toast.error("Não foi possível abrir o documento."))}
                         className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md border border-border hover:bg-accent transition-colors"
                       >
                         <ExternalLink size={14} />
                         Visualizar
-                      </a>
+                      </button>
                       <Link
                         to={`/departamentos/${doc.department_slug}`}
                         className="inline-flex items-center gap-1 text-sm px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
@@ -203,25 +204,29 @@ const DepartmentsList = () => {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departments.map((dept) => (
+          {departments.map((dept, i) => (
             <Link
               key={dept.id}
               to={`/departamentos/${dept.slug}`}
-              className="bg-card rounded-xl p-5 shadow-card hover:shadow-card-hover border border-border transition-all hover:border-primary/30 group"
+              style={{ animationDelay: `${i * 40}ms` }}
+              className="bg-card rounded-xl p-5 shadow-card border border-border hover-lift animate-rise group"
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="bg-primary text-primary-foreground text-sm font-bold rounded-lg w-10 h-10 flex items-center justify-center">
-                  {dept.code}
+                <span className="shrink-0 w-12 h-12 flex items-center justify-center text-2xl bg-secondary rounded-xl">
+                  {deptEmoji(dept.name, dept.code)}
                 </span>
-                <h2 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {dept.name}
-                </h2>
+                <div className="min-w-0">
+                  <h2 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                    {dept.name}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Departamento {dept.code}</p>
+                </div>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <FileText size={12} /> {dept.doc_count} documento(s)
                 </span>
-                <ChevronRight size={14} className="group-hover:text-primary transition-colors" />
+                <ChevronRight size={14} className="text-primary" />
               </div>
             </Link>
           ))}

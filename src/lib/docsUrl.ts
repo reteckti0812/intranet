@@ -1,17 +1,17 @@
-/** Caminho absoluto ou relativo a `Documentos` → URL relativa servida em `/docs/...`. */
-export function hrefForDocumentPath(filePath: string): string {
-  if (!filePath) return "#";
-  const norm = filePath.replace(/\\/g, "/");
-  const lower = norm.toLowerCase();
-  const marker = "/documentos/";
-  const i = lower.indexOf(marker);
-  const relative = i >= 0 ? norm.slice(i + marker.length) : norm;
-  return (
-    "/docs/" +
-    relative
-      .split("/")
-      .filter(Boolean)
-      .map((segment) => encodeURIComponent(segment))
-      .join("/")
-  );
+/** URL de download público de um documento (apenas documentos aprovados). */
+export function publicDownloadUrl(documentId: number | string): string {
+  return `/api/documents/public/${documentId}/download`;
+}
+
+/** URL de download autenticado (área admin) — versão atual do documento. */
+export function adminDownloadUrl(documentId: number | string): string {
+  return `/api/documents/${documentId}/download`;
+}
+
+/** URL de download autenticado de uma versão específica. */
+export function adminVersionDownloadUrl(
+  documentId: number | string,
+  versionId: number | string
+): string {
+  return `/api/documents/${documentId}/versions/${versionId}/download`;
 }
