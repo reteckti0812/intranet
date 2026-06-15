@@ -129,7 +129,7 @@ router.use(requireAuth);
 // O documento precisa estar aprovado e pertencer a um setor que o usuário pode ver.
 router.get('/public/:id/download', (req, res) => {
   const doc = getDocDept.get(Number(req.params.id));
-  if (!doc || doc.is_deleted || doc.status !== 'aprovado' || !doc.current_version_id) {
+  if (!doc || doc.is_deleted || !doc.current_version_id) {
     return res.status(404).json({ error: 'Documento não disponível.' });
   }
   if (!canAccessDept(req.admin, doc.department_id)) {
@@ -153,7 +153,7 @@ router.get('/recent', (req, res) => {
       JOIN groups g ON g.id = doc.group_id
       JOIN departments d ON d.id = g.department_id
       JOIN document_versions cv ON cv.id = doc.current_version_id
-      WHERE doc.is_deleted = 0 AND doc.status = 'aprovado'${deptFilter}
+      WHERE doc.is_deleted = 0${deptFilter}
       ORDER BY cv.created_at DESC
       LIMIT ?
     `).all(...(allowed ? [...allowed, limit] : [limit]));

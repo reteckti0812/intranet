@@ -96,6 +96,44 @@ const fileIconByName = (name: string) => {
   return <FileText size={16} className="text-primary shrink-0" />;
 };
 
+function FileCard({ title, files }: { title: string; files: HomeFileItem[] }) {
+  return (
+    <div className="bg-card rounded-xl p-5 shadow-card border border-border">
+      <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+        <FileText size={18} className="text-primary" />
+        {title}
+      </h3>
+      {files.length === 0 ? (
+        <p className="text-xs text-muted-foreground">Nenhum arquivo disponível.</p>
+      ) : (
+        <div className="space-y-2">
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2"
+            >
+              <p className="text-sm text-foreground truncate flex items-center gap-2">
+                {fileIconByName(file.name)}
+                <span className="truncate">{file.name}</span>
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <a href={file.url} target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border hover:bg-accent transition-colors">
+                  <ExternalLink size={13} /> Visualizar
+                </a>
+                <a href={file.url} download
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity">
+                  <Download size={13} /> Download
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const Home = () => {
   const { content, loading: contentLoading } = useHomeContent();
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -144,10 +182,11 @@ const Home = () => {
       return [];
     }
   };
-  const masterFiles = parseFiles(content?.master_list_files)
-    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
-  const generalFiles = parseFiles(content?.general_documents_files)
-    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+  const sortFiles = (raw?: string) =>
+    parseFiles(raw).sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }));
+  const masterFiles = sortFiles(content?.master_list_files);
+  const certFiles = sortFiles(content?.certificates_files);
+  const generalFiles = sortFiles(content?.general_documents_files);
 
   if (contentLoading || deptLoading) {
     return (
@@ -307,91 +346,9 @@ const Home = () => {
           </div>
 
           <div className="space-y-4 mt-6">
-            <div className="bg-card rounded-xl p-5 shadow-card border border-border">
-              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                <FileText size={18} className="text-primary" />
-                Lista Mestra
-              </h3>
-              {masterFiles.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhum arquivo disponível.</p>
-              ) : (
-                <div className="space-y-2">
-                  {masterFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2"
-                    >
-                      <p className="text-sm text-foreground truncate flex items-center gap-2">
-                        {fileIconByName(file.name)}
-                        <span className="truncate">{file.name}</span>
-                      </p>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border hover:bg-accent transition-colors"
-                        >
-                          <ExternalLink size={13} />
-                          Visualizar
-                        </a>
-                        <a
-                          href={file.url}
-                          download
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                        >
-                          <Download size={13} />
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="bg-card rounded-xl p-5 shadow-card border border-border">
-              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                <FileText size={18} className="text-primary" />
-                Documentos Gerais
-              </h3>
-              {generalFiles.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nenhum arquivo disponível.</p>
-              ) : (
-                <div className="space-y-2">
-                  {generalFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-border/80 bg-muted/20 px-3 py-2"
-                    >
-                      <p className="text-sm text-foreground truncate flex items-center gap-2">
-                        {fileIconByName(file.name)}
-                        <span className="truncate">{file.name}</span>
-                      </p>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-border hover:bg-accent transition-colors"
-                        >
-                          <ExternalLink size={13} />
-                          Visualizar
-                        </a>
-                        <a
-                          href={file.url}
-                          download
-                          className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                        >
-                          <Download size={13} />
-                          Download
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <FileCard title="Lista Mestra" files={masterFiles} />
+            <FileCard title="Certificados" files={certFiles} />
+            <FileCard title="Documentos Gerais" files={generalFiles} />
           </div>
         </section>
 

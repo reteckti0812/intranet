@@ -9,26 +9,30 @@ const { requireAuth, requireAdmin } = require('../middleware/auth.cjs');
 const DOCS_ROOT = 'C:\\Intranet\\Documentos';
 const HOME_ROOT = path.join(DOCS_ROOT, '_Home');
 const MASTER_DIR = path.join(HOME_ROOT, 'ListaMestra');
+const CERT_DIR = path.join(HOME_ROOT, 'Certificados');
 const GENERAL_DIR = path.join(HOME_ROOT, 'DocumentosGerais');
 
-for (const dir of [HOME_ROOT, MASTER_DIR, GENERAL_DIR]) {
+for (const dir of [HOME_ROOT, MASTER_DIR, CERT_DIR, GENERAL_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
 function keyByType(type) {
   if (type === 'master') return 'master_list_files';
+  if (type === 'certificates') return 'certificates_files';
   if (type === 'general') return 'general_documents_files';
   return null;
 }
 
 function diskDirByType(type) {
   if (type === 'master') return MASTER_DIR;
+  if (type === 'certificates') return CERT_DIR;
   if (type === 'general') return GENERAL_DIR;
   return null;
 }
 
 function publicFolderByType(type) {
   if (type === 'master') return '_Home/ListaMestra';
+  if (type === 'certificates') return '_Home/Certificados';
   if (type === 'general') return '_Home/DocumentosGerais';
   return null;
 }

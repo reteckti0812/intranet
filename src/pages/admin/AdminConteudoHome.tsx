@@ -38,6 +38,7 @@ const AdminConteudoHome = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingMaster, setUploadingMaster] = useState(false);
+  const [uploadingCert, setUploadingCert] = useState(false);
   const [uploadingGeneral, setUploadingGeneral] = useState(false);
 
   const [content, setContent] = useState<Record<string, string>>({
@@ -53,8 +54,10 @@ const AdminConteudoHome = () => {
     external_calls: "",
   });
   const [masterFiles, setMasterFiles] = useState<HomeFileItem[]>([]);
+  const [certFiles, setCertFiles] = useState<HomeFileItem[]>([]);
   const [generalFiles, setGeneralFiles] = useState<HomeFileItem[]>([]);
   const masterInputRef = useRef<HTMLInputElement | null>(null);
+  const certInputRef = useRef<HTMLInputElement | null>(null);
   const generalInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -74,6 +77,7 @@ const AdminConteudoHome = () => {
           external_calls: data.external_calls || "",
         });
         try { setMasterFiles(data.master_list_files ? JSON.parse(data.master_list_files) : []); } catch { setMasterFiles([]); }
+        try { setCertFiles(data.certificates_files ? JSON.parse(data.certificates_files) : []); } catch { setCertFiles([]); }
         try { setGeneralFiles(data.general_documents_files ? JSON.parse(data.general_documents_files) : []); } catch { setGeneralFiles([]); }
       })
       .catch(() => toast.error("Erro ao carregar conteúdo."))
@@ -99,32 +103,42 @@ const AdminConteudoHome = () => {
     }
   };
 
-  const uploadHomeFile = async (type: "master" | "general", file: File) => {
+  type FileType = "master" | "certificates" | "general";
+  const setUploadingByType: Record<FileType, (v: boolean) => void> = {
+    master: setUploadingMaster, certificates: setUploadingCert, general: setUploadingGeneral,
+  };
+  const appendByType: Record<FileType, (item: HomeFileItem) => void> = {
+    master: (item) => setMasterFiles((prev) => [...prev, item]),
+    certificates: (item) => setCertFiles((prev) => [...prev, item]),
+    general: (item) => setGeneralFiles((prev) => [...prev, item]),
+  };
+  const removeByType: Record<FileType, (id: number) => void> = {
+    master: (id) => setMasterFiles((prev) => prev.filter((f) => f.id !== id)),
+    certificates: (id) => setCertFiles((prev) => prev.filter((f) => f.id !== id)),
+    general: (id) => setGeneralFiles((prev) => prev.filter((f) => f.id !== id)),
+  };
+
+  const uploadHomeFile = async (type: FileType, file: File) => {
     const form = new FormData();
     form.append("file", file);
-    if (type === "master") setUploadingMaster(true);
-    if (type === "general") setUploadingGeneral(true);
+    setUploadingByType[type](true);
     try {
       const response = await api.post(`/home-content/files/${type}`, form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const item = response.data?.item as HomeFileItem;
-      if (type === "master") setMasterFiles((prev) => [...prev, item]);
-      if (type === "general") setGeneralFiles((prev) => [...prev, item]);
+      appendByType[type](response.data?.item as HomeFileItem);
       toast.success("Arquivo enviado com sucesso!");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Erro ao enviar arquivo.");
     } finally {
-      if (type === "master") setUploadingMaster(false);
-      if (type === "general") setUploadingGeneral(false);
+      setUploadingByType[type](false);
     }
   };
 
-  const removeHomeFile = async (type: "master" | "general", id: number) => {
+  const removeHomeFile = async (type: FileType, id: number) => {
     try {
       await api.delete(`/home-content/files/${type}/${id}`);
-      if (type === "master") setMasterFiles((prev) => prev.filter((f) => f.id !== id));
-      if (type === "general") setGeneralFiles((prev) => prev.filter((f) => f.id !== id));
+      removeByType[type](id);
       toast.success("Arquivo removido.");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Erro ao remover arquivo.");
@@ -135,7 +149,7 @@ const AdminConteudoHome = () => {
     return <div className="flex justify-center py-20"><Loader2 size={28} className="animate-spin text-primary" /></div>;
   }
 
-  const FileList = ({ type, files }: { type: "master" | "general"; files: HomeFileItem[] }) => (
+  const FileList = ({ type, files }: { type: FileType; files: HomeFileItem[] }) => (
     <div className="space-y-2">
       {files.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum arquivo cadastrado.</p>
@@ -226,6 +240,16 @@ const AdminConteudoHome = () => {
             Enviar arquivo (Lista Mestra)
           </Button>
           <FileList type="master" files={masterFiles} />
+        </Section>
+
+        <Section title="Arquivos - Certificados">
+          <input ref={certInputRef} type="file" className="hidden"
+            onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadHomeFile("certificates", file); e.currentTarget.value = ""; }} />
+          <Button onClick={() => certInputRef.current?.click()} disabled={uploadingCert}>
+            {uploadingCert ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Upload size={16} className="mr-2" />}
+            Enviar arquivo (Certificados)
+          </Button>
+          <FileList type="certificates" files={certFiles} />
         </Section>
 
         <Section title="Arquivos - Documentos Gerais">

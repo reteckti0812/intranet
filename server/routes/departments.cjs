@@ -20,7 +20,7 @@ router.get('/', requireAuth, (req, res) => {
       : '';
     // No site público só contam documentos aprovados e não excluídos.
     const docFilter = onlyPublic
-      ? `AND doc.is_deleted = 0 AND doc.status = 'aprovado'`
+      ? `AND doc.is_deleted = 0 AND doc.current_version_id IS NOT NULL`
       : `AND doc.is_deleted = 0`;
     const rows = db.prepare(`
       SELECT d.*,
@@ -74,7 +74,7 @@ router.get('/documents-all', requireAuth, requireAdmin, (req, res) => {
       INNER JOIN departments d ON d.id = g.department_id
       ORDER BY
         d.code ASC,
-        CASE WHEN LOWER(g.name) = 'procedimentos' THEN 0 ELSE 1 END,
+        CASE WHEN LOWER(g.name) LIKE 'procedimento%' THEN 0 ELSE 1 END,
         g.name COLLATE NOCASE ASC,
         doc.title COLLATE NOCASE ASC,
         doc.code COLLATE NOCASE ASC
@@ -111,7 +111,7 @@ router.get('/search-documents', requireAuth, (req, res) => {
 
     const like = `%${rawQuery.toLowerCase()}%`;
     const wherePublic = onlyPublic
-      ? `AND d.code <> '' AND d.code NOT GLOB '*[^0-9]*' AND doc.status = 'aprovado'`
+      ? `AND d.code <> '' AND d.code NOT GLOB '*[^0-9]*'`
       : '';
     const rows = db.prepare(`
       SELECT
@@ -287,14 +287,14 @@ router.get('/by-slug/:slug', requireAuth, (req, res) => {
       WHERE department_id = ?
       ORDER BY
         CASE
-          WHEN LOWER(name) = 'procedimentos' THEN 0
+          WHEN LOWER(name) LIKE 'procedimento%' THEN 0
           WHEN LOWER(name) = 'outros' THEN 2
           ELSE 1
         END,
         name COLLATE NOCASE ASC
     `).all(department.id);
 
-    // Para cada grupo, busca os documentos aprovados e com versão disponível
+    // Mostra todo documento com arquivo (qualquer status, exceto excluído na lixeira)
     const groupsWithDocs = groups.map(group => {
       const docs = db.prepare(`
         SELECT
@@ -302,6 +302,7 @@ router.get('/by-slug/:slug', requireAuth, (req, res) => {
           doc.code,
           doc.title,
           doc.observation,
+          doc.status,
           doc.effective_date as effective_date,
           cv.file_type as file_type,
           cv.file_name as file_name,
@@ -312,7 +313,6 @@ router.get('/by-slug/:slug', requireAuth, (req, res) => {
         LEFT JOIN document_versions cv ON cv.id = doc.current_version_id
         WHERE doc.group_id = ?
           AND doc.is_deleted = 0
-          AND doc.status = 'aprovado'
           AND doc.current_version_id IS NOT NULL
         ORDER BY
           CASE WHEN TRIM(COALESCE(doc.code, '')) = '' THEN 1 ELSE 0 END,
